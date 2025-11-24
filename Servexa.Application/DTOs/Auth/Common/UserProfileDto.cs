@@ -1,4 +1,4 @@
-﻿namespace Servexa.Application.DTOs.Auth;
+﻿namespace Servexa.Application.DTOs.Auth.Common;
 
 public class UserProfileDto
 {
@@ -7,4 +7,6 @@ public class UserProfileDto
     public string Email { get; set; } = default!;
     public string Phone { get; set; } = default!;
     public string Role { get; set; } = default!;
+    public string? ProfileImage { get; set; }
+    public string? Gender { get; set; }
 }

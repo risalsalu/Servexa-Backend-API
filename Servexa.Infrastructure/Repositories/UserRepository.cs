@@ -15,8 +15,10 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByEmailOrPhoneAsync(string emailOrPhone)
     {
-        const string sql = @"SELECT * FROM Users
-                             WHERE Email = @emailOrPhone OR Phone = @emailOrPhone";
+        const string sql = @"
+            SELECT * FROM Users
+            WHERE Email = @emailOrPhone 
+               OR Phone = @emailOrPhone";
 
         using var conn = _connectionFactory.CreateConnection();
         return await conn.QueryFirstOrDefaultAsync<User>(sql, new { emailOrPhone });
@@ -25,6 +27,7 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByEmailAsync(string email)
     {
         const string sql = @"SELECT * FROM Users WHERE Email = @email";
+
         using var conn = _connectionFactory.CreateConnection();
         return await conn.QueryFirstOrDefaultAsync<User>(sql, new { email });
     }
@@ -32,14 +35,19 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByIdAsync(Guid id)
     {
         const string sql = @"SELECT * FROM Users WHERE UserId = @id";
+
         using var conn = _connectionFactory.CreateConnection();
         return await conn.QueryFirstOrDefaultAsync<User>(sql, new { id });
     }
 
     public async Task<bool> EmailOrPhoneExistsAsync(string email, string phone)
     {
-        const string sql = @"SELECT COUNT(1) FROM Users
-                             WHERE Email = @email OR Phone = @phone";
+        const string sql = @"
+            SELECT COUNT(1) 
+            FROM Users
+            WHERE Email = @email 
+               OR Phone = @phone";
+
         using var conn = _connectionFactory.CreateConnection();
         var count = await conn.ExecuteScalarAsync<int>(sql, new { email, phone });
         return count > 0;
@@ -48,27 +56,53 @@ public class UserRepository : IUserRepository
     public async Task CreateAsync(User user)
     {
         const string sql = @"
-            INSERT INTO Users (UserId, FullName, Email, PasswordHash, Role, Phone, CreatedAt, IsActive)
-            VALUES (@UserId, @FullName, @Email, @PasswordHash, @Role, @Phone, @CreatedAt, @IsActive);";
+            INSERT INTO Users 
+                (UserId, FullName, Email, PasswordHash, Role, Phone, CreatedOn, ModifiedOn, IsActive)
+            VALUES 
+                (@Id, @FullName, @Email, @PasswordHash, @Role, @Phone, @CreatedOn, @ModifiedOn, @IsActive);";
 
         using var conn = _connectionFactory.CreateConnection();
-        await conn.ExecuteAsync(sql, user);
+        await conn.ExecuteAsync(sql, new
+        {
+            user.Id,
+            user.FullName,
+            user.Email,
+            user.PasswordHash,
+            user.Role,
+            user.Phone,
+            user.CreatedOn,
+            user.ModifiedOn,
+            user.IsActive
+        });
     }
 
     public async Task<bool> UpdateAsync(User user)
     {
         const string sql = @"
             UPDATE Users
-               SET FullName = @FullName,
-                   Email    = @Email,
+               SET FullName    = @FullName,
+                   Email       = @Email,
                    PasswordHash = @PasswordHash,
-                   Role     = @Role,
-                   Phone    = @Phone,
-                   IsActive = @IsActive
-             WHERE UserId = @UserId";
+                   Role        = @Role,
+                   Phone       = @Phone,
+                   ModifiedOn  = @ModifiedOn,
+                   IsActive    = @IsActive
+             WHERE UserId      = @Id";
 
         using var conn = _connectionFactory.CreateConnection();
-        var rows = await conn.ExecuteAsync(sql, user);
+
+        var rows = await conn.ExecuteAsync(sql, new
+        {
+            user.Id,
+            user.FullName,
+            user.Email,
+            user.PasswordHash,
+            user.Role,
+            user.Phone,
+            user.ModifiedOn,
+            user.IsActive
+        });
+
         return rows > 0;
     }
 }

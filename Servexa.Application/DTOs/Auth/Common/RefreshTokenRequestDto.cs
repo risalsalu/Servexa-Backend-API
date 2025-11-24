@@ -1,4 +1,4 @@
-﻿namespace Servexa.Application.DTOs.Auth;
+﻿namespace Servexa.Application.DTOs.Auth.Common;
 
 public class RefreshTokenRequestDto
 {
