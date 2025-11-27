@@ -19,12 +19,14 @@ namespace Servexa.Infrastructure.Services
         private readonly IUserRepository _userRepo;
         private readonly ITokenRepository _tokenRepo;
         private readonly IConfiguration _config;
+        private readonly ICloudinaryService _cloudinary;
 
-        public AuthService(IUserRepository userRepo, ITokenRepository tokenRepo, IConfiguration config)
+        public AuthService(IUserRepository userRepo, ITokenRepository tokenRepo, IConfiguration config, ICloudinaryService cloudinary)
         {
             _userRepo = userRepo;
             _tokenRepo = tokenRepo;
             _config = config;
+            _cloudinary = cloudinary;
         }
 
         public async Task<AuthResponseDto> RegisterUserAsync(CustomerRegisterDto dto)
@@ -41,7 +43,8 @@ namespace Servexa.Infrastructure.Services
                 Role = dto.Role,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 CreatedOn = DateTime.UtcNow,
-                IsActive = true
+                IsActive = true,
+                IsDeleted = false
             };
 
             await _userRepo.CreateAsync(user);
@@ -53,6 +56,10 @@ namespace Servexa.Infrastructure.Services
             if (await _userRepo.EmailOrPhoneExistsAsync(dto.Email, dto.Phone))
                 throw new ApplicationException("Email or phone already in use.");
 
+            var shopPhotoUrl = await _cloudinary.UploadAsync(dto.ShopPhoto);
+            var licenseUrl = await _cloudinary.UploadAsync(dto.LicenseDocument);
+            var idCardUrl = await _cloudinary.UploadAsync(dto.IdCard);
+
             var user = new User
             {
                 Id = Guid.NewGuid(),
@@ -63,13 +70,12 @@ namespace Servexa.Infrastructure.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 BusinessName = dto.BusinessName,
                 Address = dto.Address,
-                Latitude = dto.Latitude,
-                Longitude = dto.Longitude,
-                ShopPhotoUrl = dto.ShopPhotoUrl,
-                LicenseDocumentUrl = dto.LicenseDocumentUrl,
-                IdCardUrl = dto.IdCardUrl,
+                ShopPhotoUrl = shopPhotoUrl,
+                LicenseDocumentUrl = licenseUrl,
+                IdCardUrl = idCardUrl,
                 CreatedOn = DateTime.UtcNow,
-                IsActive = true
+                IsActive = true,
+                IsDeleted = false
             };
 
             await _userRepo.CreateAsync(user);
@@ -86,6 +92,31 @@ namespace Servexa.Infrastructure.Services
 
             if (!user.IsActive)
                 throw new ApplicationException("Account is disabled.");
+
+            return await GenerateTokensForUser(user);
+        }
+
+        public async Task<AuthResponseDto> SocialLoginAsync(SocialLoginDto dto)
+        {
+            var user = await _userRepo.GetByEmailAsync(dto.Email);
+
+            if (user == null)
+            {
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    FullName = dto.FullName,
+                    Email = dto.Email,
+                    Phone = dto.Phone ?? "",
+                    Role = dto.Role,
+                    PasswordHash = "",
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true,
+                    IsDeleted = false
+                };
+
+                await _userRepo.CreateAsync(user);
+            }
 
             return await GenerateTokensForUser(user);
         }
@@ -120,11 +151,6 @@ namespace Servexa.Infrastructure.Services
             return Task.CompletedTask;
         }
 
-        public Task<AuthResponseDto> SocialLoginAsync(SocialLoginDto dto)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<UserProfileDto> GetCurrentUserAsync(Guid userId)
         {
             var user = await _userRepo.GetByIdAsync(userId)
@@ -148,20 +174,21 @@ namespace Servexa.Infrastructure.Services
             user.FullName = dto.FullName;
             user.Phone = dto.Phone;
             user.ModifiedOn = DateTime.UtcNow;
+            user.ModifiedBy = userId;
 
             await _userRepo.UpdateAsync(user);
         }
 
         private async Task<AuthResponseDto> GenerateTokensForUser(User user)
         {
-            var accessToken = GenerateJwtToken(user, out var expiresInSeconds);
-            var refreshToken = await GenerateAndStoreRefreshToken(user);
+            var token = GenerateJwtToken(user, out var expires);
+            var refresh = await GenerateAndStoreRefreshToken(user);
 
             return new AuthResponseDto
             {
-                Token = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresIn = expiresInSeconds,
+                Token = token,
+                RefreshToken = refresh,
+                ExpiresIn = expires,
                 Role = user.Role,
                 UserId = user.Id
             };
@@ -190,9 +217,9 @@ namespace Servexa.Infrastructure.Services
             var expires = DateTime.UtcNow.AddMinutes(minutes);
 
             var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
+                issuer,
+                audience,
+                claims,
                 expires: expires,
                 signingCredentials: credentials
             );
@@ -219,7 +246,8 @@ namespace Servexa.Infrastructure.Services
                 Token = tokenString,
                 CreatedOn = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(days),
-                IsRevoked = false
+                IsRevoked = false,
+                IsDeleted = false
             };
 
             await _tokenRepo.SaveRefreshTokenAsync(refresh);

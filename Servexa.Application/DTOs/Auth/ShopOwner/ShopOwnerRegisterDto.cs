@@ -1,4 +1,6 @@
-﻿namespace Servexa.Application.DTOs.Auth.ShopOwner;
+﻿using Microsoft.AspNetCore.Http;
+
+namespace Servexa.Application.DTOs.Auth.ShopOwner;
 
 public class ShopOwnerRegisterDto
 {
@@ -13,7 +15,7 @@ public class ShopOwnerRegisterDto
     public double Latitude { get; set; }
     public double Longitude { get; set; }
 
-    public string ShopPhotoUrl { get; set; } = default!;
-    public string LicenseDocumentUrl { get; set; } = default!;
-    public string IdCardUrl { get; set; } = default!;
+    public IFormFile ShopPhoto { get; set; } = default!;
+    public IFormFile LicenseDocument { get; set; } = default!;
+    public IFormFile IdCard { get; set; } = default!;
 }

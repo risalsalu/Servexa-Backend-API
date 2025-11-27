@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Servexa.API.Controllers;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Auth;
 using Servexa.Application.DTOs.Auth.Common;
 using Servexa.Application.DTOs.Auth.Customer;
@@ -8,6 +8,7 @@ using Servexa.Application.Interfaces;
 
 namespace Servexa.API.Controllers
 {
+    [ApiController]
     [Route("api/[controller]")]
     public class AuthController : BaseController
     {
@@ -17,7 +18,7 @@ namespace Servexa.API.Controllers
         {
             _authService = authService;
         }
-
+        
         [HttpPost("register-user")]
         public async Task<IActionResult> RegisterUser([FromBody] CustomerRegisterDto dto)
         {
@@ -26,7 +27,8 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost("register-shopowner")]
-        public async Task<IActionResult> RegisterShopOwner([FromBody] ShopOwnerRegisterDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> RegisterShopOwner([FromForm] ShopOwnerRegisterDto dto)
         {
             var result = await _authService.RegisterShopOwnerAsync(dto);
             return Success(result, "Shop owner registration successful");
@@ -37,6 +39,13 @@ namespace Servexa.API.Controllers
         {
             var result = await _authService.LoginAsync(dto);
             return Success(result, "Login successful");
+        }
+
+        [HttpPost("social-login")]
+        public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto dto)
+        {
+            var result = await _authService.SocialLoginAsync(dto);
+            return Success(result, "Social login successful");
         }
 
         [HttpPost("refresh-token")]
@@ -65,13 +74,6 @@ namespace Servexa.API.Controllers
         {
             await _authService.ResetPasswordAsync(dto);
             return SuccessMessage("Password reset successful");
-        }
-
-        [HttpPost("social-login")]
-        public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto dto)
-        {
-            var result = await _authService.SocialLoginAsync(dto);
-            return Success(result, "Social login successful");
         }
     }
 }
