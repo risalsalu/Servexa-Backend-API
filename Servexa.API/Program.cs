@@ -9,6 +9,7 @@ using Servexa.Infrastructure.Settings;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
 Console.WriteLine("USING DB: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
 builder.Services.AddControllers();
@@ -68,6 +69,9 @@ builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
 
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
+builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]!;
