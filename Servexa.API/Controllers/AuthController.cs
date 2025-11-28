@@ -1,5 +1,4 @@
-﻿using Dapper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Auth;
 using Servexa.Application.DTOs.Auth.Common;
 using Servexa.Application.DTOs.Auth.Customer;
@@ -18,7 +17,7 @@ namespace Servexa.API.Controllers
         {
             _authService = authService;
         }
-        
+
         [HttpPost("register-user")]
         public async Task<IActionResult> RegisterUser([FromBody] CustomerRegisterDto dto)
         {

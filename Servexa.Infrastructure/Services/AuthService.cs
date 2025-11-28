@@ -48,7 +48,15 @@ namespace Servexa.Infrastructure.Services
             };
 
             await _userRepo.CreateAsync(user);
-            return await GenerateTokensForUser(user);
+
+            return new AuthResponseDto
+            {
+                Token = "",
+                RefreshToken = "",
+                ExpiresIn = 0,
+                Role = user.Role,
+                UserId = user.Id
+            };
         }
 
         public async Task<AuthResponseDto> RegisterShopOwnerAsync(ShopOwnerRegisterDto dto)
@@ -79,7 +87,15 @@ namespace Servexa.Infrastructure.Services
             };
 
             await _userRepo.CreateAsync(user);
-            return await GenerateTokensForUser(user);
+
+            return new AuthResponseDto
+            {
+                Token = "",
+                RefreshToken = "",
+                ExpiresIn = 0,
+                Role = user.Role,
+                UserId = user.Id
+            };
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
