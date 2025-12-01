@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Servexa.Domain.Models;
 
-namespace Servexa.Application.Interfaces;
-
-public interface IShopImageRepository
+namespace Servexa.Application.Interfaces
 {
-    Task<ShopImage> AddAsync(ShopImage image);
-    Task<ShopImage?> GetByIdAsync(Guid id);
-    Task<IEnumerable<ShopImage>> GetByShopIdAsync(Guid shopId);
-    Task DeleteAsync(Guid id);
+    public interface IShopImageRepository
+    {
+        Task<ShopImage> AddAsync(ShopImage image);
+        Task<ShopImage?> GetByIdAsync(Guid id);
+        Task<List<ShopImage>> GetByShopIdAsync(Guid shopId);
+        Task DeleteAsync(Guid id);
+    }
 }

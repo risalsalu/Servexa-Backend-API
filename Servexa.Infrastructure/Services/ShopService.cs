@@ -7,257 +7,158 @@ using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 using Servexa.Shared.Responses;
 
-namespace Servexa.Infrastructure.Services;
-
-public class ShopService : IShopService
+namespace Servexa.Infrastructure.Services
 {
-    private readonly IShopRepository _shopRepository;
-    private readonly IShopImageRepository _shopImageRepository;
-    private readonly ICloudinaryService _cloudinaryService;
-
-    public ShopService(
-        IShopRepository shopRepository,
-        IShopImageRepository shopImageRepository,
-        ICloudinaryService cloudinaryService)
+    public class ShopService : IShopService
     {
-        _shopRepository = shopRepository;
-        _shopImageRepository = shopImageRepository;
-        _cloudinaryService = cloudinaryService;
-    }
+        private readonly IShopRepository _shopRepository;
+        private readonly IShopImageRepository _shopImageRepository;
+        private readonly ICloudinaryService _cloudinaryService;
 
-    public async Task<ApiResponse<Guid>> RegisterShopAsync(Guid ownerId, AddShopDto dto)
-    {
-        var already = await _shopRepository.OwnerHasShopAsync(ownerId);
-        if (already)
+        public ShopService(
+            IShopRepository shopRepository,
+            IShopImageRepository shopImageRepository,
+            ICloudinaryService cloudinaryService)
         {
-            return new ApiResponse<Guid>
-            {
-                Success = false,
-                Message = "Shop already exists for this owner.",
-                Data = Guid.Empty,
-                Errors = null
-            };
+            _shopRepository = shopRepository;
+            _shopImageRepository = shopImageRepository;
+            _cloudinaryService = cloudinaryService;
         }
 
-        var shop = new Shop
+        public async Task<ApiResponse<Guid>> RegisterShopAsync(Guid ownerId, AddShopDto dto)
         {
-            OwnerId = ownerId,
-            ShopName = dto.ShopName,
-            Categories = dto.Categories,
-            Description = dto.Description,
-            Address = dto.Address,
-            Latitude = dto.Latitude,
-            Longitude = dto.Longitude,
-            Phone = dto.Phone,
-            HomeServiceAvailable = dto.HomeServiceAvailable,
-            LicenseImageUrl = dto.LicenseImageUrl,
-            IdProofImageUrl = dto.IdProofImageUrl,
-            Services = dto.Services,
-            WorkingHours = dto.WorkingHours,
-            IsActive = false
-        };
+            var exists = await _shopRepository.OwnerHasShopAsync(ownerId);
+            if (exists)
+                return ApiResponse<Guid>.ErrorResponse("Shop already exists for this owner.");
 
-        var id = await _shopRepository.CreateAsync(shop);
-
-        return new ApiResponse<Guid>
-        {
-            Success = true,
-            Message = "Shop registered successfully.",
-            Data = id,
-            Errors = null
-        };
-    }
-
-    public async Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId)
-    {
-        var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
-        if (shop == null)
-        {
-            return new ApiResponse<ShopResponseDto>
+            var shop = new Shop
             {
-                Success = false,
-                Message = "Shop not found.",
-                Data = null,
-                Errors = null
+                OwnerId = ownerId,
+                ShopName = dto.ShopName,
+                Categories = dto.Categories,
+                Description = dto.Description,
+                Address = dto.Address,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                Phone = dto.Phone,
+                HomeServiceAvailable = dto.HomeServiceAvailable,
+                LicenseImageUrl = dto.LicenseImageUrl,
+                IdProofImageUrl = dto.IdProofImageUrl,
+                Services = dto.Services,
+                WorkingHours = dto.WorkingHours,
+                IsActive = false
             };
+
+            var id = await _shopRepository.CreateAsync(shop);
+
+            return ApiResponse<Guid>.SuccessResponse(id, "Shop registered successfully.");
         }
 
-        var images = await _shopImageRepository.GetByShopIdAsync(shop.Id);
-
-        var dto = new ShopResponseDto
+        public async Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId)
         {
-            ShopId = shop.Id,
-            OwnerId = shop.OwnerId,
-            ShopName = shop.ShopName,
-            Categories = shop.Categories,
-            Description = shop.Description,
-            Address = shop.Address,
-            Latitude = shop.Latitude,
-            Longitude = shop.Longitude,
-            Phone = shop.Phone,
-            HomeServiceAvailable = shop.HomeServiceAvailable,
-            LicenseImageUrl = shop.LicenseImageUrl,
-            IdProofImageUrl = shop.IdProofImageUrl,
-            IsActive = shop.IsActive,
-            Services = shop.Services,
-            WorkingHours = shop.WorkingHours,
-            Images = images.Select(i => i.ImageUrl).ToList()
-        };
+            var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
+            if (shop == null)
+                return ApiResponse<ShopResponseDto>.ErrorResponse("Shop not found.");
 
-        return new ApiResponse<ShopResponseDto>
-        {
-            Success = true,
-            Message = "Shop fetched successfully.",
-            Data = dto,
-            Errors = null
-        };
-    }
+            var images = await _shopImageRepository.GetByShopIdAsync(shop.Id);
 
-    public async Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto)
-    {
-        var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
-        if (shop == null)
-        {
-            return new ApiResponse<bool>
+            var dto = new ShopResponseDto
             {
-                Success = false,
-                Message = "Shop not found.",
-                Data = false,
-                Errors = null
+                ShopId = shop.Id,
+                OwnerId = shop.OwnerId,
+                ShopName = shop.ShopName,
+                Categories = shop.Categories,
+                Description = shop.Description,
+                Address = shop.Address,
+                Latitude = shop.Latitude,
+                Longitude = shop.Longitude,
+                Phone = shop.Phone,
+                HomeServiceAvailable = shop.HomeServiceAvailable,
+                LicenseImageUrl = shop.LicenseImageUrl,
+                IdProofImageUrl = shop.IdProofImageUrl,
+                IsActive = shop.IsActive,
+                Services = shop.Services,
+                WorkingHours = shop.WorkingHours,
+                Images = images.Select(i => i.ImageUrl).ToList()
             };
+
+            return ApiResponse<ShopResponseDto>.SuccessResponse(dto, "Shop fetched successfully.");
         }
 
-        shop.ShopName = dto.ShopName;
-        shop.Categories = dto.Categories;
-        shop.Description = dto.Description;
-        shop.Address = dto.Address;
-        shop.Latitude = dto.Latitude;
-        shop.Longitude = dto.Longitude;
-        shop.Phone = dto.Phone;
-        shop.HomeServiceAvailable = dto.HomeServiceAvailable;
-        shop.Services = dto.Services;
-        shop.WorkingHours = dto.WorkingHours;
-
-        await _shopRepository.UpdateAsync(shop);
-
-        return new ApiResponse<bool>
+        public async Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto)
         {
-            Success = true,
-            Message = "Shop updated successfully.",
-            Data = true,
-            Errors = null
-        };
-    }
+            var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
+            if (shop == null)
+                return ApiResponse<bool>.ErrorResponse("Shop not found.");
 
-    public async Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive)
-    {
-        var exists = await _shopRepository.OwnerHasShopAsync(ownerId);
-        if (!exists)
-        {
-            return new ApiResponse<bool>
-            {
-                Success = false,
-                Message = "Shop not found.",
-                Data = false,
-                Errors = null
-            };
+            shop.ShopName = dto.ShopName;
+            shop.Categories = dto.Categories;
+            shop.Description = dto.Description;
+            shop.Address = dto.Address;
+            shop.Latitude = dto.Latitude;
+            shop.Longitude = dto.Longitude;
+            shop.Phone = dto.Phone;
+            shop.HomeServiceAvailable = dto.HomeServiceAvailable;
+            shop.Services = dto.Services;
+            shop.WorkingHours = dto.WorkingHours;
+
+            await _shopRepository.UpdateAsync(shop);
+
+            return ApiResponse<bool>.SuccessResponse(true, "Shop updated successfully.");
         }
 
-        await _shopRepository.SetActiveStatusAsync(ownerId, isActive);
-
-        return new ApiResponse<bool>
+        public async Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive)
         {
-            Success = true,
-            Message = "Shop status updated successfully.",
-            Data = true,
-            Errors = null
-        };
-    }
+            var exists = await _shopRepository.OwnerHasShopAsync(ownerId);
+            if (!exists)
+                return ApiResponse<bool>.ErrorResponse("Shop not found.");
 
-    public async Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file)
-    {
-        var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
-        if (shop == null)
-        {
-            return new ApiResponse<AddShopImageDto>
-            {
-                Success = false,
-                Message = "Shop not found.",
-                Data = null,
-                Errors = null
-            };
+            await _shopRepository.SetActiveStatusAsync(ownerId, isActive);
+
+            return ApiResponse<bool>.SuccessResponse(true, "Shop status updated successfully.");
         }
 
-        if (file == null || file.Length == 0)
+        public async Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file)
         {
-            return new ApiResponse<AddShopImageDto>
+            var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
+            if (shop == null)
+                return ApiResponse<AddShopImageDto>.ErrorResponse("Shop not found.");
+
+            if (file == null || file.Length == 0)
+                return ApiResponse<AddShopImageDto>.ErrorResponse("File is required.");
+
+            var url = await _cloudinaryService.UploadAsync(file);
+
+            var image = new ShopImage
             {
-                Success = false,
-                Message = "File is required.",
-                Data = null,
-                Errors = null
+                ShopId = shop.Id,
+                ImageUrl = url
             };
+
+            image = await _shopImageRepository.AddAsync(image);
+
+            var dto = new AddShopImageDto
+            {
+                ImageId = image.Id,
+                ImageUrl = image.ImageUrl
+            };
+
+            return ApiResponse<AddShopImageDto>.SuccessResponse(dto, "Image uploaded successfully.");
         }
 
-        var url = await _cloudinaryService.UploadAsync(file);
-
-        var image = new ShopImage
+        public async Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId)
         {
-            ShopId = shop.Id,
-            ImageUrl = url
-        };
+            var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
+            if (shop == null)
+                return ApiResponse<bool>.ErrorResponse("Shop not found.");
 
-        image = await _shopImageRepository.AddAsync(image);
+            var image = await _shopImageRepository.GetByIdAsync(imageId);
+            if (image == null || image.ShopId != shop.Id)
+                return ApiResponse<bool>.ErrorResponse("Image not found.");
 
-        var dto = new AddShopImageDto
-        {
-            ImageId = image.Id,
-            ImageUrl = image.ImageUrl
-        };
+            await _shopImageRepository.DeleteAsync(imageId);
 
-        return new ApiResponse<AddShopImageDto>
-        {
-            Success = true,
-            Message = "Image uploaded successfully.",
-            Data = dto,
-            Errors = null
-        };
-    }
-
-    public async Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId)
-    {
-        var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
-        if (shop == null)
-        {
-            return new ApiResponse<bool>
-            {
-                Success = false,
-                Message = "Shop not found.",
-                Data = false,
-                Errors = null
-            };
+            return ApiResponse<bool>.SuccessResponse(true, "Image deleted successfully.");
         }
-
-        var image = await _shopImageRepository.GetByIdAsync(imageId);
-        if (image == null || image.ShopId != shop.Id)
-        {
-            return new ApiResponse<bool>
-            {
-                Success = false,
-                Message = "Image not found.",
-                Data = false,
-                Errors = null
-            };
-        }
-
-        await _shopImageRepository.DeleteAsync(imageId);
-
-        return new ApiResponse<bool>
-        {
-            Success = true,
-            Message = "Image deleted successfully.",
-            Data = true,
-            Errors = null
-        };
     }
 }

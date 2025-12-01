@@ -26,8 +26,7 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost("register-shopowner")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> RegisterShopOwner([FromForm] ShopOwnerRegisterDto dto)
+        public async Task<IActionResult> RegisterShopOwner([FromBody] ShopOwnerRegisterDto dto)
         {
             var result = await _authService.RegisterShopOwnerAsync(dto);
             return Success(result, "Shop owner registration successful");

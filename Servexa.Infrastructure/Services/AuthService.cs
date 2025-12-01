@@ -1,8 +1,10 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using BCrypt.Net;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Servexa.Application.DTOs.Auth;
@@ -19,14 +21,12 @@ namespace Servexa.Infrastructure.Services
         private readonly IUserRepository _userRepo;
         private readonly ITokenRepository _tokenRepo;
         private readonly IConfiguration _config;
-        private readonly ICloudinaryService _cloudinary;
 
-        public AuthService(IUserRepository userRepo, ITokenRepository tokenRepo, IConfiguration config, ICloudinaryService cloudinary)
+        public AuthService(IUserRepository userRepo, ITokenRepository tokenRepo, IConfiguration config)
         {
             _userRepo = userRepo;
             _tokenRepo = tokenRepo;
             _config = config;
-            _cloudinary = cloudinary;
         }
 
         public async Task<AuthResponseDto> RegisterUserAsync(CustomerRegisterDto dto)
@@ -64,10 +64,6 @@ namespace Servexa.Infrastructure.Services
             if (await _userRepo.EmailOrPhoneExistsAsync(dto.Email, dto.Phone))
                 throw new ApplicationException("Email or phone already in use.");
 
-            var shopPhotoUrl = await _cloudinary.UploadAsync(dto.ShopPhoto);
-            var licenseUrl = await _cloudinary.UploadAsync(dto.LicenseDocument);
-            var idCardUrl = await _cloudinary.UploadAsync(dto.IdCard);
-
             var user = new User
             {
                 Id = Guid.NewGuid(),
@@ -77,10 +73,6 @@ namespace Servexa.Infrastructure.Services
                 Role = dto.Role,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 BusinessName = dto.BusinessName,
-                Address = dto.Address,
-                ShopPhotoUrl = shopPhotoUrl,
-                LicenseDocumentUrl = licenseUrl,
-                IdCardUrl = idCardUrl,
                 CreatedOn = DateTime.UtcNow,
                 IsActive = true,
                 IsDeleted = false

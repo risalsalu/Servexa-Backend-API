@@ -6,50 +6,54 @@ using Dapper;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 
-namespace Servexa.Infrastructure.Repositories;
-
-public class ShopImageRepository : IShopImageRepository
+namespace Servexa.Infrastructure.Repositories
 {
-    private readonly IDbConnectionFactory _connectionFactory;
-
-    public ShopImageRepository(IDbConnectionFactory connectionFactory)
+    public class ShopImageRepository : IShopImageRepository
     {
-        _connectionFactory = connectionFactory;
-    }
+        private readonly IDbConnectionFactory _connectionFactory;
 
-    private IDbConnection CreateConnection() => _connectionFactory.CreateConnection();
+        public ShopImageRepository(IDbConnectionFactory connectionFactory)
+        {
+            _connectionFactory = connectionFactory;
+        }
 
-    public async Task<ShopImage> AddAsync(ShopImage image)
-    {
-        const string sql = @"
+        private IDbConnection Conn() => _connectionFactory.CreateConnection();
+
+        public async Task<ShopImage> AddAsync(ShopImage image)
+        {
+            image.Id = Guid.NewGuid();
+            image.CreatedOn = DateTime.UtcNow;
+
+            const string sql = @"
 INSERT INTO ShopImages
-(Id, ShopId, ImageUrl)
+(Id, ShopId, ImageUrl, IsDeleted, CreatedOn)
 VALUES
-(@Id, @ShopId, @ImageUrl)";
-        image.Id = Guid.NewGuid();
-        using var connection = CreateConnection();
-        await connection.ExecuteAsync(sql, image);
-        return image;
-    }
+(@Id, @ShopId, @ImageUrl, 0, @CreatedOn)";
 
-    public async Task<ShopImage?> GetByIdAsync(Guid id)
-    {
-        const string sql = "SELECT TOP 1 * FROM ShopImages WHERE Id = @Id";
-        using var connection = CreateConnection();
-        return await connection.QueryFirstOrDefaultAsync<ShopImage>(sql, new { Id = id });
-    }
+            using var db = Conn();
+            await db.ExecuteAsync(sql, image);
+            return image;
+        }
 
-    public async Task<IEnumerable<ShopImage>> GetByShopIdAsync(Guid shopId)
-    {
-        const string sql = "SELECT * FROM ShopImages WHERE ShopId = @ShopId";
-        using var connection = CreateConnection();
-        return await connection.QueryAsync<ShopImage>(sql, new { ShopId = shopId });
-    }
+        public async Task<List<ShopImage>> GetByShopIdAsync(Guid shopId)
+        {
+            const string sql = "SELECT * FROM ShopImages WHERE ShopId = @shopId AND IsDeleted = 0";
+            using var db = Conn();
+            return (await db.QueryAsync<ShopImage>(sql, new { shopId })).AsList();
+        }
 
-    public async Task DeleteAsync(Guid id)
-    {
-        const string sql = "DELETE FROM ShopImages WHERE Id = @Id";
-        using var connection = CreateConnection();
-        await connection.ExecuteAsync(sql, new { Id = id });
+        public async Task<ShopImage?> GetByIdAsync(Guid id)
+        {
+            const string sql = "SELECT TOP 1 * FROM ShopImages WHERE Id = @id AND IsDeleted = 0";
+            using var db = Conn();
+            return await db.QueryFirstOrDefaultAsync<ShopImage>(sql, new { id });
+        }
+
+        public async Task DeleteAsync(Guid id)
+        {
+            const string sql = "UPDATE ShopImages SET IsDeleted = 1 WHERE Id = @id";
+            using var db = Conn();
+            await db.ExecuteAsync(sql, new { id });
+        }
     }
 }

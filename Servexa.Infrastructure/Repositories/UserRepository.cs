@@ -1,4 +1,6 @@
-﻿using Dapper;
+﻿using System;
+using System.Threading.Tasks;
+using Dapper;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 
@@ -63,12 +65,6 @@ namespace Servexa.Infrastructure.Repositories
                     Phone,
                     IsActive,
                     BusinessName,
-                    Address,
-                    Latitude,
-                    Longitude,
-                    ShopPhotoUrl,
-                    LicenseDocumentUrl,
-                    IdCardUrl,
                     CreatedBy,
                     CreatedOn,
                     ModifiedBy,
@@ -86,12 +82,6 @@ namespace Servexa.Infrastructure.Repositories
                     @Phone,
                     @IsActive,
                     @BusinessName,
-                    @Address,
-                    @Latitude,
-                    @Longitude,
-                    @ShopPhotoUrl,
-                    @LicenseDocumentUrl,
-                    @IdCardUrl,
                     @CreatedBy,
                     @CreatedOn,
                     @ModifiedBy,
@@ -115,12 +105,6 @@ namespace Servexa.Infrastructure.Repositories
                     Role = @Role,
                     Phone = @Phone,
                     BusinessName = @BusinessName,
-                    Address = @Address,
-                    Latitude = @Latitude,
-                    Longitude = @Longitude,
-                    ShopPhotoUrl = @ShopPhotoUrl,
-                    LicenseDocumentUrl = @LicenseDocumentUrl,
-                    IdCardUrl = @IdCardUrl,
                     ModifiedBy = @ModifiedBy,
                     ModifiedOn = @ModifiedOn,
                     IsActive = @IsActive,

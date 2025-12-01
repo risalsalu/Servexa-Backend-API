@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
-using Servexa.Shared.Responses;
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Servexa.Shared.Responses;
 
 namespace Servexa.API.Middleware
 {
@@ -25,9 +25,7 @@ namespace Servexa.API.Middleware
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 context.Response.ContentType = "application/json";
 
-                var response = ApiResponse<string>.Error(
-                    message: ex.Message
-                );
+                var response = ApiResponse<string>.ErrorResponse(ex.Message);
 
                 var json = JsonSerializer.Serialize(response);
 

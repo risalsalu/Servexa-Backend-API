@@ -13,12 +13,12 @@ namespace Servexa.API.Controllers
 
         protected IActionResult SuccessMessage(string message)
         {
-            return Ok(ApiResponse<string>.SuccessResponse(default, message));
+            return Ok(ApiResponse<string>.SuccessResponse(null, message));
         }
 
         protected IActionResult Error(string message)
         {
-            return BadRequest(ApiResponse<string>.Error(message));
+            return BadRequest(ApiResponse<string>.ErrorResponse(message));
         }
     }
 }

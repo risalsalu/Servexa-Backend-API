@@ -5,52 +5,65 @@ using Dapper;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 
-namespace Servexa.Infrastructure.Repositories;
-
-public class ShopRepository : IShopRepository
+namespace Servexa.Infrastructure.Repositories
 {
-    private readonly IDbConnectionFactory _connectionFactory;
-
-    public ShopRepository(IDbConnectionFactory connectionFactory)
+    public class ShopRepository : IShopRepository
     {
-        _connectionFactory = connectionFactory;
-    }
+        private readonly IDbConnectionFactory _connectionFactory;
 
-    private IDbConnection CreateConnection() => _connectionFactory.CreateConnection();
+        public ShopRepository(IDbConnectionFactory connectionFactory)
+        {
+            _connectionFactory = connectionFactory;
+        }
 
-    public async Task<bool> OwnerHasShopAsync(Guid ownerId)
-    {
-        const string sql = "SELECT COUNT(1) FROM Shops WHERE OwnerId = @OwnerId";
-        using var connection = CreateConnection();
-        var count = await connection.ExecuteScalarAsync<int>(sql, new { OwnerId = ownerId });
-        return count > 0;
-    }
+        private IDbConnection Conn() => _connectionFactory.CreateConnection();
 
-    public async Task<Guid> CreateAsync(Shop shop)
-    {
-        const string sql = @"
+        public async Task<bool> OwnerHasShopAsync(Guid ownerId)
+        {
+            const string sql = "SELECT COUNT(1) FROM Shops WHERE OwnerId = @ownerId AND IsDeleted = 0";
+            using var db = Conn();
+            return await db.ExecuteScalarAsync<int>(sql, new { ownerId }) > 0;
+        }
+
+        public async Task<Guid> CreateAsync(Shop shop)
+        {
+            shop.Id = Guid.NewGuid();
+            shop.CreatedOn = DateTime.UtcNow;
+
+            const string sql = @"
 INSERT INTO Shops
 (Id, OwnerId, ShopName, Categories, Description, Address, Latitude, Longitude, Phone,
- HomeServiceAvailable, LicenseImageUrl, IdProofImageUrl, IsActive, Services, WorkingHours)
+ HomeServiceAvailable, LicenseImageUrl, IdProofImageUrl, Services, WorkingHours,
+ IsActive, IsDeleted, CreatedOn)
 VALUES
 (@Id, @OwnerId, @ShopName, @Categories, @Description, @Address, @Latitude, @Longitude, @Phone,
- @HomeServiceAvailable, @LicenseImageUrl, @IdProofImageUrl, @IsActive, @Services, @WorkingHours)";
-        shop.Id = Guid.NewGuid();
-        using var connection = CreateConnection();
-        await connection.ExecuteAsync(sql, shop);
-        return shop.Id;
-    }
+ @HomeServiceAvailable, @LicenseImageUrl, @IdProofImageUrl, @Services, @WorkingHours,
+ @IsActive, 0, @CreatedOn)";
 
-    public async Task<Shop?> GetByOwnerIdAsync(Guid ownerId)
-    {
-        const string sql = "SELECT TOP 1 * FROM Shops WHERE OwnerId = @OwnerId";
-        using var connection = CreateConnection();
-        return await connection.QueryFirstOrDefaultAsync<Shop>(sql, new { OwnerId = ownerId });
-    }
+            using var db = Conn();
+            await db.ExecuteAsync(sql, shop);
+            return shop.Id;
+        }
 
-    public async Task UpdateAsync(Shop shop)
-    {
-        const string sql = @"
+        public async Task<Shop?> GetByOwnerIdAsync(Guid ownerId)
+        {
+            const string sql = "SELECT TOP 1 * FROM Shops WHERE OwnerId = @ownerId AND IsDeleted = 0";
+            using var db = Conn();
+            return await db.QueryFirstOrDefaultAsync<Shop>(sql, new { ownerId });
+        }
+
+        public async Task<Shop?> GetByIdAsync(Guid id)
+        {
+            const string sql = "SELECT TOP 1 * FROM Shops WHERE Id = @id AND IsDeleted = 0";
+            using var db = Conn();
+            return await db.QueryFirstOrDefaultAsync<Shop>(sql, new { id });
+        }
+
+        public async Task UpdateAsync(Shop shop)
+        {
+            shop.ModifiedOn = DateTime.UtcNow;
+
+            const string sql = @"
 UPDATE Shops SET
 ShopName = @ShopName,
 Categories = @Categories,
@@ -61,16 +74,19 @@ Longitude = @Longitude,
 Phone = @Phone,
 HomeServiceAvailable = @HomeServiceAvailable,
 Services = @Services,
-WorkingHours = @WorkingHours
-WHERE OwnerId = @OwnerId";
-        using var connection = CreateConnection();
-        await connection.ExecuteAsync(sql, shop);
-    }
+WorkingHours = @WorkingHours,
+ModifiedOn = @ModifiedOn
+WHERE Id = @Id";
 
-    public async Task SetActiveStatusAsync(Guid ownerId, bool isActive)
-    {
-        const string sql = "UPDATE Shops SET IsActive = @IsActive WHERE OwnerId = @OwnerId";
-        using var connection = CreateConnection();
-        await connection.ExecuteAsync(sql, new { OwnerId = ownerId, IsActive = isActive });
+            using var db = Conn();
+            await db.ExecuteAsync(sql, shop);
+        }
+
+        public async Task SetActiveStatusAsync(Guid ownerId, bool isActive)
+        {
+            const string sql = "UPDATE Shops SET IsActive = @isActive WHERE OwnerId = @ownerId AND IsDeleted = 0";
+            using var db = Conn();
+            await db.ExecuteAsync(sql, new { ownerId, isActive });
+        }
     }
 }
