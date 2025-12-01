@@ -1,6 +1,8 @@
-﻿namespace Servexa.Application.DTOs.Shop;
+﻿using Microsoft.AspNetCore.Http;
 
-public class AddShopDto
+namespace Servexa.API.Models;
+
+public class AddShopRequest
 {
     public string ShopName { get; set; } = string.Empty;
     public string Categories { get; set; } = string.Empty;
@@ -12,4 +14,8 @@ public class AddShopDto
     public bool HomeServiceAvailable { get; set; }
     public string Services { get; set; } = string.Empty;
     public string WorkingHours { get; set; } = string.Empty;
+
+    public IFormFile ShopImage { get; set; } = null!;
+    public IFormFile LicenseImage { get; set; } = null!;
+    public IFormFile IdProofImage { get; set; } = null!;
 }

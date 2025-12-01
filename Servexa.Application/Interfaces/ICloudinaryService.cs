@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 
-namespace Servexa.Application.Interfaces
+namespace Servexa.Application.Interfaces;
+
+public interface ICloudinaryService
 {
-    public interface ICloudinaryService
-    {
-        Task<string> UploadAsync(IFormFile file);
-    }
+    Task<(string Url, string PublicId)> UploadAsync(IFormFile file);
+    Task<bool> DeleteAsync(string publicId);
 }

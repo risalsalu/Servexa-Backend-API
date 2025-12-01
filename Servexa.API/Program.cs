@@ -1,3 +1,4 @@
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -23,7 +24,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        In = ParameterLocation.Header,
+        In = ParameterLocation.Header
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -50,17 +51,31 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
-builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
 builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
 
 builder.Services.AddScoped<IShopRepository, ShopRepository>();
 builder.Services.AddScoped<IShopImageRepository, ShopImageRepository>();
 builder.Services.AddScoped<IShopService, ShopService>();
+
+var cloudinaryConfig = new CloudinarySettings();
+builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinaryConfig);
+
+var cloudinaryAccount = new Account(
+    cloudinaryConfig.CloudName,
+    cloudinaryConfig.ApiKey,
+    cloudinaryConfig.ApiSecret
+);
+
+var cloudinary = new Cloudinary(cloudinaryAccount);
+
+builder.Services.AddSingleton(cloudinary);
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]!;

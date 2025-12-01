@@ -1,42 +1,38 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
-using Servexa.Infrastructure.Settings;
-    using Servexa.Application.Interfaces;
+using Servexa.Application.Interfaces;
+using System.Threading.Tasks;
 
-namespace Servexa.Infrastructure.Services
+namespace Servexa.Infrastructure.Services;
+
+public class CloudinaryService : ICloudinaryService
 {
-    public class CloudinaryService : ICloudinaryService
+    private readonly Cloudinary _cloudinary;
+
+    public CloudinaryService(Cloudinary cloudinary)
     {
-        private readonly Cloudinary _cloudinary;
+        _cloudinary = cloudinary;
+    }
 
-        public CloudinaryService(IOptions<CloudinarySettings> config)
+    public async Task<(string Url, string PublicId)> UploadAsync(IFormFile file)
+    {
+        using var stream = file.OpenReadStream();
+
+        var upload = new ImageUploadParams
         {
-            var settings = config.Value;
+            File = new FileDescription(file.FileName, stream),
+            Folder = "servexa/shops"
+        };
 
-            var account = new Account(
-                settings.CloudName,
-                settings.ApiKey,
-                settings.ApiSecret
-            );
+        var result = await _cloudinary.UploadAsync(upload);
+        return (result.SecureUrl.ToString(), result.PublicId);
+    }
 
-            _cloudinary = new Cloudinary(account);
-        }
-
-        public async Task<string> UploadAsync(IFormFile file)
-        {
-            using var stream = file.OpenReadStream();
-
-            var uploadParams = new ImageUploadParams
-            {
-                File = new FileDescription(file.FileName, stream),
-                Folder = "servexa_shopowners"
-            };
-
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-
-            return uploadResult?.SecureUrl?.ToString() ?? "";
-        }
+    public async Task<bool> DeleteAsync(string publicId)
+    {
+        var deletion = new DeletionParams(publicId);
+        var result = await _cloudinary.DestroyAsync(deletion);
+        return result.Result == "ok";
     }
 }

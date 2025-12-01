@@ -1,9 +1,8 @@
-﻿namespace Servexa.Infrastructure.Settings
+﻿namespace Servexa.Infrastructure.Settings;
+
+public class CloudinarySettings
 {
-    public class CloudinarySettings
-    {
-        public string CloudName { get; set; } = default!;
-        public string ApiKey { get; set; } = default!;
-        public string ApiSecret { get; set; } = default!;
-    }
+    public string CloudName { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+    public string ApiSecret { get; set; } = string.Empty;
 }
