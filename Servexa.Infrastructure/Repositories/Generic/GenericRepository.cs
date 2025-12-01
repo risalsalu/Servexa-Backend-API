@@ -34,7 +34,7 @@ namespace Servexa.Infrastructure.Repositories.Generic
         {
             entity.CreatedOn = DateTime.UtcNow;
 
-            var props = SqlBuilderExtensions.GetProperties<T>();
+            var props = SqlBuilderExtensions.GetInsertableProperties<T>();
             string columns = string.Join(", ", props.Select(p => p.Name));
             string values = string.Join(", ", props.Select(p => $"@{p.Name}"));
 
@@ -50,7 +50,7 @@ namespace Servexa.Infrastructure.Repositories.Generic
         {
             entity.ModifiedOn = DateTime.UtcNow;
 
-            var props = SqlBuilderExtensions.GetProperties<T>();
+            var props = SqlBuilderExtensions.GetUpdatableProperties<T>();
             string setClause = string.Join(", ", props.Select(p => $"{p.Name} = @{p.Name}"));
 
             string sql = $"UPDATE {_table} SET {setClause} WHERE Id = @Id";
