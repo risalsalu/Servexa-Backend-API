@@ -33,7 +33,11 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
             },
             Array.Empty<string>()
         }
@@ -66,6 +70,8 @@ builder.Services.AddScoped<IShopService, ShopService>();
 
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
+
+builder.Services.AddScoped<IAdminUserManagementService, AdminUserManagementService>();
 
 var cloudinaryConfig = new CloudinarySettings();
 builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinaryConfig);
