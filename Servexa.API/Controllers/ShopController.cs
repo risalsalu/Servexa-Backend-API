@@ -8,114 +8,116 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Servexa.API.Controllers;
-
-[ApiController]
-[Route("api/shop")]
-[Authorize(Roles = "ShopOwner")]
-public class ShopController : BaseController
+namespace Servexa.API.Controllers
 {
-    private readonly IShopService _shopService;
-    private readonly ICloudinaryService _cloudinary;
-
-    public ShopController(IShopService shopService, ICloudinaryService cloudinary)
+    [ApiController]
+    [Route("api/shop")]
+    [Authorize(Roles = "ShopOwner")]
+    public class ShopController : BaseController
     {
-        _shopService = shopService;
-        _cloudinary = cloudinary;
-    }
+        private readonly IShopService _shopService;
+        private readonly ICloudinaryService _cloudinary;
 
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromForm] AddShopRequest req)
-    {
-        var ownerId = GetUserId();
-
-        var dto = new AddShopDto
+        public ShopController(IShopService shopService, ICloudinaryService cloudinary)
         {
-            ShopName = req.ShopName,
-            Categories = req.Categories,
-            Description = req.Description,
-            Address = req.Address,
-            Latitude = req.Latitude,
-            Longitude = req.Longitude,
-            Phone = req.Phone,
-            HomeServiceAvailable = req.HomeServiceAvailable,
-            Services = req.Services,
-            WorkingHours = req.WorkingHours
-        };
+            _shopService = shopService;
+            _cloudinary = cloudinary;
+        }
 
-        var (shopUrl, shopPublicId) = await _cloudinary.UploadAsync(req.ShopImage);
-        var (licenseUrl, licensePublicId) = await _cloudinary.UploadAsync(req.LicenseImage);
-        var (idUrl, idPublicId) = await _cloudinary.UploadAsync(req.IdProofImage);
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromForm] AddShopRequest req)
+        {
+            var ownerId = GetUserId();
 
-        var result = await _shopService.RegisterShopAsync(
-            ownerId,
-            dto,
-            shopUrl,
-            shopPublicId,
-            licenseUrl,
-            licensePublicId,
-            idUrl,
-            idPublicId);
+            var dto = new AddShopDto
+            {
+                ShopName = req.ShopName,
+                CategoryId = req.CategoryId,
+                Description = req.Description,
+                Address = req.Address,
+                Latitude = req.Latitude,
+                Longitude = req.Longitude,
+                Phone = req.Phone,
+                HomeServiceAvailable = req.HomeServiceAvailable,
+                Services = req.Services,
+                WorkingHours = req.WorkingHours
+            };
 
-        if (!result.Success)
-            return Error(result.Message);
+            var (shopUrl, shopPublicId) = await _cloudinary.UploadAsync(req.ShopImage);
+            var (licenseUrl, licensePublicId) = await _cloudinary.UploadAsync(req.LicenseImage);
+            var (idUrl, idPublicId) = await _cloudinary.UploadAsync(req.IdProofImage);
 
-        return Success(result.Data, result.Message);
-    }
+            var result = await _shopService.RegisterShopAsync(
+                ownerId,
+                dto,
+                shopUrl,
+                shopPublicId,
+                licenseUrl,
+                licensePublicId,
+                idUrl,
+                idPublicId
+            );
 
-    [HttpGet]
-    public async Task<IActionResult> Get()
-    {
-        var ownerId = GetUserId();
-        var result = await _shopService.GetShopAsync(ownerId);
-        if (!result.Success)
-            return Error(result.Message);
-        return Success(result.Data, result.Message);
-    }
+            if (!result.Success)
+                return Error(result.Message);
 
-    [HttpPut]
-    public async Task<IActionResult> Update([FromBody] UpdateShopDto dto)
-    {
-        var ownerId = GetUserId();
-        var result = await _shopService.UpdateShopAsync(ownerId, dto);
-        if (!result.Success)
-            return Error(result.Message);
-        return Success(result.Data, result.Message);
-    }
+            return Success(result.Data, result.Message);
+        }
 
-    [HttpPatch("activate")]
-    public async Task<IActionResult> Activate([FromBody] ActivateShopDto dto)
-    {
-        var ownerId = GetUserId();
-        var result = await _shopService.SetActiveStatusAsync(ownerId, dto.IsActive);
-        if (!result.Success)
-            return Error(result.Message);
-        return Success(result.Data, result.Message);
-    }
+        [HttpGet]
+        public async Task<IActionResult> Get()
+        {
+            var ownerId = GetUserId();
+            var result = await _shopService.GetShopAsync(ownerId);
+            if (!result.Success)
+                return Error(result.Message);
+            return Success(result.Data, result.Message);
+        }
 
-    [HttpPost("images")]
-    public async Task<IActionResult> AddImage(IFormFile file)
-    {
-        var ownerId = GetUserId();
-        var result = await _shopService.AddShopImageAsync(ownerId, file);
-        if (!result.Success)
-            return Error(result.Message);
-        return Success(result.Data, result.Message);
-    }
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] UpdateShopDto dto)
+        {
+            var ownerId = GetUserId();
+            var result = await _shopService.UpdateShopAsync(ownerId, dto);
+            if (!result.Success)
+                return Error(result.Message);
+            return Success(result.Data, result.Message);
+        }
 
-    [HttpDelete("images/{imageId:guid}")]
-    public async Task<IActionResult> DeleteImage(Guid imageId)
-    {
-        var ownerId = GetUserId();
-        var result = await _shopService.DeleteShopImageAsync(ownerId, imageId);
-        if (!result.Success)
-            return Error(result.Message);
-        return Success(result.Data, result.Message);
-    }
+        [HttpPatch("activate")]
+        public async Task<IActionResult> Activate([FromBody] ActivateShopDto dto)
+        {
+            var ownerId = GetUserId();
+            var result = await _shopService.SetActiveStatusAsync(ownerId, dto.IsActive);
+            if (!result.Success)
+                return Error(result.Message);
+            return Success(result.Data, result.Message);
+        }
 
-    private Guid GetUserId()
-    {
-        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        [HttpPost("images")]
+        public async Task<IActionResult> AddImage(IFormFile file)
+        {
+            var ownerId = GetUserId();
+            var result = await _shopService.AddShopImageAsync(ownerId, file);
+            if (!result.Success)
+                return Error(result.Message);
+            return Success(result.Data, result.Message);
+        }
+
+        [HttpDelete("images/{imageId:guid}")]
+        public async Task<IActionResult> DeleteImage(Guid imageId)
+        {
+            var ownerId = GetUserId();
+            var result = await _shopService.DeleteShopImageAsync(ownerId, imageId);
+            if (!result.Success)
+                return Error(result.Message);
+            return Success(result.Data, result.Message);
+        }
+
+        private Guid GetUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        }
     }
 }
