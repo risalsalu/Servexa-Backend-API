@@ -2,10 +2,10 @@
 {
     public class AddAddressDto
     {
-        public string Label { get; set; } = default!;
-        public string Line1 { get; set; } = default!;
-        public string City { get; set; } = default!;
-        public string Pincode { get; set; } = default!;
+        public string Label { get; set; } = string.Empty;
+        public string Line1 { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Pincode { get; set; } = string.Empty;
         public double? Lat { get; set; }
         public double? Lng { get; set; }
     }

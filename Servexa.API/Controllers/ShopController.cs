@@ -17,11 +17,23 @@ namespace Servexa.API.Controllers
     {
         private readonly IShopService _shopService;
         private readonly ICloudinaryService _cloudinary;
+        private readonly IAdminCategoryService _categoryService;
 
-        public ShopController(IShopService shopService, ICloudinaryService cloudinary)
+        public ShopController(
+            IShopService shopService,
+            ICloudinaryService cloudinary,
+            IAdminCategoryService categoryService)
         {
             _shopService = shopService;
             _cloudinary = cloudinary;
+            _categoryService = categoryService;
+        }
+
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            var result = await _categoryService.GetAllAsync();
+            return Ok(result);
         }
 
         [HttpPost("register")]

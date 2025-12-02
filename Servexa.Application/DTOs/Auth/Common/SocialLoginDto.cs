@@ -2,12 +2,12 @@
 {
     public class SocialLoginDto
     {
-        public string Email { get; set; } = default!;
-        public string FullName { get; set; } = default!;
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string Role { get; set; } = "Customer";
-        public string Provider { get; set; } = default!;  // Google, Facebook
-        public string ProviderUserId { get; set; } = default!;
-        public string AccessToken { get; set; } = default!;
+        public string Provider { get; set; } = string.Empty;
+        public string ProviderUserId { get; set; } = string.Empty;
+        public string AccessToken { get; set; } = string.Empty;
     }
 }

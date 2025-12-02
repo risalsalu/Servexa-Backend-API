@@ -2,5 +2,5 @@
 
 public class ForgotPasswordDto
 {
-    public string EmailOrPhone { get; set; } = default!;
+    public string EmailOrPhone { get; set; } = string.Empty;
 }
