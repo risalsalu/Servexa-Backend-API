@@ -141,6 +141,7 @@ namespace Servexa.Infrastructure.Services
                 ?? throw new ApplicationException("User not found.");
 
             await _tokenRepo.RevokeRefreshTokenAsync(refreshToken);
+
             return await GenerateTokensForUser(user);
         }
 
@@ -149,14 +150,28 @@ namespace Servexa.Infrastructure.Services
             await _tokenRepo.RevokeAllForUserAsync(userId);
         }
 
-        public Task ForgotPasswordAsync(ForgotPasswordDto dto)
+        public async Task<string?> ForgotPasswordAsync(ForgotPasswordDto dto)
         {
-            return Task.CompletedTask;
+            var user = await _userRepo.GetByEmailOrPhoneAsync(dto.EmailOrPhone);
+            if (user == null)
+                return null;
+
+            return user.Id.ToString();
         }
 
-        public Task ResetPasswordAsync(ResetPasswordDto dto)
+        public async Task ResetPasswordAsync(ResetPasswordDto dto)
         {
-            return Task.CompletedTask;
+            if (!Guid.TryParse(dto.Token, out var userId))
+                throw new ApplicationException("Invalid reset token.");
+
+            var user = await _userRepo.GetByIdAsync(userId)
+                ?? throw new ApplicationException("User not found.");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.ModifiedOn = DateTime.UtcNow;
+            user.ModifiedBy = userId;
+
+            await _userRepo.UpdateAsync(user);
         }
 
         public async Task<UserProfileDto> GetCurrentUserAsync(Guid userId)

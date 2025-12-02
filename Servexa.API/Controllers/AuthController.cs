@@ -63,8 +63,8 @@ namespace Servexa.API.Controllers
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
-            await _authService.ForgotPasswordAsync(dto);
-            return SuccessMessage("Reset instructions sent");
+            var token = await _authService.ForgotPasswordAsync(dto);
+            return Success(token, "Reset instructions sent");
         }
 
         [HttpPost("reset-password")]
