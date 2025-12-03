@@ -32,13 +32,11 @@ namespace Servexa.Infrastructure.Repositories
 
             const string sql = @"
 INSERT INTO Shops
-(Id, OwnerId, ShopName, Categories, Description, Address, Latitude, Longitude, Phone,
- HomeServiceAvailable, LicenseImageUrl, IdProofImageUrl, Services, WorkingHours,
- IsActive, IsDeleted, CreatedOn)
+(Id, OwnerId, ShopName, CategoryId, Description, Address, Latitude, Longitude, Phone,
+ HomeServiceAvailable, Services, WorkingHours, IsActive, IsDeleted, CreatedOn)
 VALUES
-(@Id, @OwnerId, @ShopName, @Categories, @Description, @Address, @Latitude, @Longitude, @Phone,
- @HomeServiceAvailable, @LicenseImageUrl, @IdProofImageUrl, @Services, @WorkingHours,
- @IsActive, 0, @CreatedOn)";
+(@Id, @OwnerId, @ShopName, @CategoryId, @Description, @Address, @Latitude, @Longitude, @Phone,
+ @HomeServiceAvailable, @Services, @WorkingHours, @IsActive, 0, @CreatedOn)";
 
             using var db = Conn();
             await db.ExecuteAsync(sql, shop);
@@ -66,7 +64,7 @@ VALUES
             const string sql = @"
 UPDATE Shops SET
 ShopName = @ShopName,
-Categories = @Categories,
+CategoryId = @CategoryId,
 Description = @Description,
 Address = @Address,
 Latitude = @Latitude,
