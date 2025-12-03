@@ -1,4 +1,5 @@
 ﻿using Servexa.Domain.Models;
+using Servexa.Application.DTOs.Admin;
 
 namespace Servexa.Application.Interfaces
 {
@@ -13,5 +14,6 @@ namespace Servexa.Application.Interfaces
         Task<IEnumerable<User>> GetAllUsersAsync();
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
         Task<bool> SoftDeleteAsync(Guid id, Guid deletedBy);
+        Task<IEnumerable<AdminShopOwnerListDto>> GetAllShopOwnersWithShopStatusAsync();
     }
 }

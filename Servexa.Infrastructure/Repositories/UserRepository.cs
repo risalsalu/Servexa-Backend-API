@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Servexa.Application.DTOs.Admin;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 
@@ -99,6 +100,25 @@ namespace Servexa.Infrastructure.Repositories
                 WHERE Id = @id";
             using var conn = _connectionFactory.CreateConnection();
             return await conn.ExecuteAsync(sql, new { id, deletedBy, now = DateTime.UtcNow }) > 0;
+        }
+
+        public async Task<IEnumerable<AdminShopOwnerListDto>> GetAllShopOwnersWithShopStatusAsync()
+        {
+            const string sql = @"
+SELECT 
+    u.Id,
+    u.FullName AS OwnerName,
+    u.BusinessName,
+    u.Email,
+    u.Phone,
+    s.ShopName,
+    s.IsActive
+FROM Users u
+LEFT JOIN Shops s ON s.OwnerId = u.Id
+WHERE u.Role = 'ShopOwner' AND u.IsDeleted = 0";
+
+            using var conn = _connectionFactory.CreateConnection();
+            return await conn.QueryAsync<AdminShopOwnerListDto>(sql);
         }
     }
 }
