@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Servexa.Domain.Models;
 
@@ -12,5 +13,6 @@ namespace Servexa.Application.Interfaces
         Task<Shop?> GetByIdAsync(Guid id);
         Task UpdateAsync(Shop shop);
         Task SetActiveStatusAsync(Guid ownerId, bool isActive);
+        Task<IEnumerable<Shop>> GetActiveShopsAsync();
     }
 }

@@ -1,21 +1,22 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Servexa.API.Controllers;
 using Servexa.Application.DTOs.Auth.Common;
 using Servexa.Application.Interfaces;
+using System.Security.Claims;
 
 namespace Servexa.API.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
-    public class UsersController : BaseController
+    public class UsersController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IShopService _shopService;
 
-        public UsersController(IAuthService authService)
+        public UsersController(IAuthService authService, IShopService shopService)
         {
             _authService = authService;
+            _shopService = shopService;
         }
 
         private Guid GetUserId()
@@ -26,7 +27,7 @@ namespace Servexa.API.Controllers
         {
             var userId = GetUserId();
             var profile = await _authService.GetCurrentUserAsync(userId);
-            return Success(profile, "Profile fetched");
+            return Ok(profile);
         }
 
         [HttpPut("me")]
@@ -34,7 +35,14 @@ namespace Servexa.API.Controllers
         {
             var userId = GetUserId();
             await _authService.UpdateProfileAsync(userId, dto);
-            return SuccessMessage("Profile updated");
+            return Ok(new { Message = "Profile updated" });
+        }
+
+        [HttpGet("shops")]
+        public async Task<IActionResult> GetActiveShops()
+        {
+            var shops = await _shopService.GetAllActiveShopsAsync();
+            return Ok(shops);
         }
     }
 }

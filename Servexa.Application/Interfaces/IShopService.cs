@@ -1,25 +1,29 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Servexa.Application.DTOs.Shop;
 using Servexa.Shared.Responses;
 
-namespace Servexa.Application.Interfaces;
-
-public interface IShopService
+namespace Servexa.Application.Interfaces
 {
-    Task<ApiResponse<Guid>> RegisterShopAsync(
-        Guid ownerId,
-        AddShopDto dto,
-        string? shopUrl,
-        string? shopPublicId,
-        string? licenseUrl,
-        string? licensePublicId,
-        string? idUrl,
-        string? idPublicId);
+    public interface IShopService
+    {
+        Task<ApiResponse<Guid>> RegisterShopAsync(
+            Guid ownerId,
+            AddShopDto dto,
+            string? shopUrl,
+            string? shopPublicId,
+            string? licenseUrl,
+            string? licensePublicId,
+            string? idUrl,
+            string? idPublicId);
 
-    Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId);
-    Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto);
-    Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive);
-
-    Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file);
-    Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId);
+        Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId);
+        Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto);
+        Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive);
+        Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file);
+        Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId);
+        Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync();
+    }
 }

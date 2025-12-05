@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
+using System.Collections.Generic;
 
 namespace Servexa.Infrastructure.Repositories
 {
@@ -85,6 +86,13 @@ WHERE Id = @Id";
             const string sql = "UPDATE Shops SET IsActive = @isActive WHERE OwnerId = @ownerId AND IsDeleted = 0";
             using var db = Conn();
             await db.ExecuteAsync(sql, new { ownerId, isActive });
+        }
+
+        public async Task<IEnumerable<Shop>> GetActiveShopsAsync()
+        {
+            const string sql = "SELECT * FROM Shops WHERE IsDeleted = 0 AND IsActive = 1";
+            using var db = Conn();
+            return await db.QueryAsync<Shop>(sql);
         }
     }
 }

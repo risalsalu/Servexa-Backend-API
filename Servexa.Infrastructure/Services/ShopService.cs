@@ -6,6 +6,7 @@ using Servexa.Shared.Responses;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Servexa.Infrastructure.Services
 {
@@ -147,6 +148,30 @@ namespace Servexa.Infrastructure.Services
             await _shopRepository.SetActiveStatusAsync(ownerId, isActive);
 
             return ApiResponse<bool>.SuccessResponse(true, "Updated.");
+        }
+
+        public async Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync()
+        {
+            var shops = await _shopRepository.GetActiveShopsAsync();
+
+            var result = shops.Select(s => new ShopResponseDto
+            {
+                ShopId = s.Id,
+                OwnerId = s.OwnerId,
+                ShopName = s.ShopName,
+                CategoryId = s.CategoryId,
+                Description = s.Description,
+                Address = s.Address,
+                Latitude = s.Latitude,
+                Longitude = s.Longitude,
+                Phone = s.Phone,
+                HomeServiceAvailable = s.HomeServiceAvailable,
+                Services = s.Services,
+                WorkingHours = s.WorkingHours,
+                IsActive = s.IsActive
+            });
+
+            return ApiResponse<IEnumerable<ShopResponseDto>>.SuccessResponse(result);
         }
 
         public async Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file)
