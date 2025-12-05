@@ -112,7 +112,8 @@ SELECT
     u.Email,
     u.Phone,
     s.ShopName,
-    s.IsActive
+    u.IsActive AS UserIsActive,
+    s.IsActive AS ShopIsActive
 FROM Users u
 LEFT JOIN Shops s ON s.OwnerId = u.Id
 WHERE u.Role = 'ShopOwner' AND u.IsDeleted = 0";

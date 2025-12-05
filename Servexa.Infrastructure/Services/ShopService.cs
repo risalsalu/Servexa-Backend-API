@@ -114,7 +114,7 @@ namespace Servexa.Infrastructure.Services
                 Images = images.Select(i => i.ImageUrl).ToList()
             };
 
-            return ApiResponse<ShopResponseDto>.SuccessResponse(dto, "Shop fetched.");
+            return ApiResponse<ShopResponseDto>.SuccessResponse(dto);
         }
 
         public async Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto)
@@ -136,7 +136,7 @@ namespace Servexa.Infrastructure.Services
 
             await _shopRepository.UpdateAsync(shop);
 
-            return ApiResponse<bool>.SuccessResponse(true, "Updated.");
+            return ApiResponse<bool>.SuccessResponse(true);
         }
 
         public async Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive)
@@ -147,7 +147,7 @@ namespace Servexa.Infrastructure.Services
 
             await _shopRepository.SetActiveStatusAsync(ownerId, isActive);
 
-            return ApiResponse<bool>.SuccessResponse(true, "Updated.");
+            return ApiResponse<bool>.SuccessResponse(true,"Status Updated");
         }
 
         public async Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync()
@@ -190,13 +190,11 @@ namespace Servexa.Infrastructure.Services
                 ImageType = "Gallery"
             });
 
-            var dto = new AddShopImageDto
+            return ApiResponse<AddShopImageDto>.SuccessResponse(new AddShopImageDto
             {
                 ImageId = image.Id,
                 ImageUrl = image.ImageUrl
-            };
-
-            return ApiResponse<AddShopImageDto>.SuccessResponse(dto, "Uploaded.");
+            });
         }
 
         public async Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId)
@@ -212,7 +210,7 @@ namespace Servexa.Infrastructure.Services
             await _cloudinary.DeleteAsync(image.PublicId);
             await _shopImageRepository.DeleteAsync(imageId);
 
-            return ApiResponse<bool>.SuccessResponse(true, "Deleted.");
+            return ApiResponse<bool>.SuccessResponse(true);
         }
     }
 }

@@ -35,7 +35,6 @@ namespace Servexa.Infrastructure.Services
         public async Task<ApiResponse<IEnumerable<AdminShopOwnerListDto>>> GetAllShopOwnersAsync()
         {
             var owners = await _repo.GetAllShopOwnersWithShopStatusAsync();
-
             return ApiResponse<IEnumerable<AdminShopOwnerListDto>>.SuccessResponse(owners);
         }
 
@@ -44,7 +43,6 @@ namespace Servexa.Infrastructure.Services
             var updated = await _repo.SetActiveStatusAsync(id, isActive);
             if (!updated)
                 return ApiResponse<bool>.ErrorResponse("Failed.");
-
             return ApiResponse<bool>.SuccessResponse(true, "Updated.");
         }
 
@@ -53,7 +51,6 @@ namespace Servexa.Infrastructure.Services
             var updated = await _repo.SetActiveStatusAsync(id, isActive);
             if (!updated)
                 return ApiResponse<bool>.ErrorResponse("Failed.");
-
             return ApiResponse<bool>.SuccessResponse(true, "Updated.");
         }
 
@@ -62,7 +59,6 @@ namespace Servexa.Infrastructure.Services
             var deleted = await _repo.SoftDeleteAsync(id, adminId);
             if (!deleted)
                 return ApiResponse<bool>.ErrorResponse("Failed.");
-
             return ApiResponse<bool>.SuccessResponse(true, "Deleted.");
         }
     }

@@ -1,6 +1,7 @@
-﻿namespace Servexa.Application.DTOs.Shop;
-
-public class ActivateShopDto
+﻿namespace Servexa.Application.DTOs.Shop
 {
-    public bool IsActive { get; set; }
+    public class ActivateShopDto
+    {
+        public bool IsActive { get; set; }
+    }
 }
