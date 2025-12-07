@@ -74,6 +74,9 @@ builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 
 builder.Services.AddScoped<IAdminUserManagementService, AdminUserManagementService>();
 
+builder.Services.AddScoped<IShopServiceRepository, ShopServiceRepository>();
+builder.Services.AddScoped<IShopServiceManagementService, ShopServiceManagementService>();
+
 var cloudinaryConfig = new CloudinarySettings();
 builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinaryConfig);
 

@@ -4,9 +4,10 @@ using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 using Servexa.Shared.Responses;
 using System;
+using System.Text.Json;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Servexa.Infrastructure.Services
 {
@@ -16,10 +17,7 @@ namespace Servexa.Infrastructure.Services
         private readonly IShopImageRepository _shopImageRepository;
         private readonly ICloudinaryService _cloudinary;
 
-        public ShopService(
-            IShopRepository shopRepository,
-            IShopImageRepository shopImageRepository,
-            ICloudinaryService cloudinary)
+        public ShopService(IShopRepository shopRepository, IShopImageRepository shopImageRepository, ICloudinaryService cloudinary)
         {
             _shopRepository = shopRepository;
             _shopImageRepository = shopImageRepository;
@@ -51,8 +49,7 @@ namespace Servexa.Infrastructure.Services
                 Longitude = dto.Longitude,
                 Phone = dto.Phone,
                 HomeServiceAvailable = dto.HomeServiceAvailable,
-                Services = dto.Services,
-                WorkingHours = dto.WorkingHours,
+                WorkingHours = JsonSerializer.Serialize(dto.WorkingHours),
                 IsActive = false
             };
 
@@ -85,7 +82,7 @@ namespace Servexa.Infrastructure.Services
                     ImageType = "IdProof"
                 });
 
-            return ApiResponse<Guid>.SuccessResponse(shopId, "Shop registered.");
+            return ApiResponse<Guid>.SuccessResponse(shopId);
         }
 
         public async Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId)
@@ -108,7 +105,6 @@ namespace Servexa.Infrastructure.Services
                 Longitude = shop.Longitude,
                 Phone = shop.Phone,
                 HomeServiceAvailable = shop.HomeServiceAvailable,
-                Services = shop.Services,
                 WorkingHours = shop.WorkingHours,
                 IsActive = shop.IsActive,
                 Images = images.Select(i => i.ImageUrl).ToList()
@@ -131,8 +127,7 @@ namespace Servexa.Infrastructure.Services
             shop.Longitude = dto.Longitude;
             shop.Phone = dto.Phone;
             shop.HomeServiceAvailable = dto.HomeServiceAvailable;
-            shop.Services = dto.Services;
-            shop.WorkingHours = dto.WorkingHours;
+            shop.WorkingHours = JsonSerializer.Serialize(dto.WorkingHours);
 
             await _shopRepository.UpdateAsync(shop);
 
@@ -147,31 +142,7 @@ namespace Servexa.Infrastructure.Services
 
             await _shopRepository.SetActiveStatusAsync(ownerId, isActive);
 
-            return ApiResponse<bool>.SuccessResponse(true,"Status Updated");
-        }
-
-        public async Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync()
-        {
-            var shops = await _shopRepository.GetActiveShopsAsync();
-
-            var result = shops.Select(s => new ShopResponseDto
-            {
-                ShopId = s.Id,
-                OwnerId = s.OwnerId,
-                ShopName = s.ShopName,
-                CategoryId = s.CategoryId,
-                Description = s.Description,
-                Address = s.Address,
-                Latitude = s.Latitude,
-                Longitude = s.Longitude,
-                Phone = s.Phone,
-                HomeServiceAvailable = s.HomeServiceAvailable,
-                Services = s.Services,
-                WorkingHours = s.WorkingHours,
-                IsActive = s.IsActive
-            });
-
-            return ApiResponse<IEnumerable<ShopResponseDto>>.SuccessResponse(result);
+            return ApiResponse<bool>.SuccessResponse(true, "Status Updated");
         }
 
         public async Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file)
@@ -211,6 +182,29 @@ namespace Servexa.Infrastructure.Services
             await _shopImageRepository.DeleteAsync(imageId);
 
             return ApiResponse<bool>.SuccessResponse(true);
+        }
+
+        public async Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync()
+        {
+            var shops = await _shopRepository.GetActiveShopsAsync();
+
+            var result = shops.Select(s => new ShopResponseDto
+            {
+                ShopId = s.Id,
+                OwnerId = s.OwnerId,
+                ShopName = s.ShopName,
+                CategoryId = s.CategoryId,
+                Description = s.Description,
+                Address = s.Address,
+                Latitude = s.Latitude,
+                Longitude = s.Longitude,
+                Phone = s.Phone,
+                HomeServiceAvailable = s.HomeServiceAvailable,
+                WorkingHours = s.WorkingHours,
+                IsActive = s.IsActive
+            });
+
+            return ApiResponse<IEnumerable<ShopResponseDto>>.SuccessResponse(result);
         }
     }
 }

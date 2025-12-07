@@ -1,9 +1,10 @@
 ﻿using System;
 
-namespace Servexa.Application.DTOs.Shop;
-
-public class AddShopImageDto
+namespace Servexa.Application.DTOs.Shop
 {
-    public Guid ImageId { get; set; }
-    public string ImageUrl { get; set; } = default!;
+    public class AddShopImageDto
+    {
+        public Guid ImageId { get; set; }
+        public string ImageUrl { get; set; } = default!;
+    }
 }

@@ -12,11 +12,16 @@ namespace Servexa.API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IShopService _shopService;
+        private readonly IShopServiceManagementService _serviceManagement;
 
-        public UsersController(IAuthService authService, IShopService shopService)
+        public UsersController(
+            IAuthService authService,
+            IShopService shopService,
+            IShopServiceManagementService serviceManagement)
         {
             _authService = authService;
             _shopService = shopService;
+            _serviceManagement = serviceManagement;
         }
 
         private Guid GetUserId()
@@ -43,6 +48,13 @@ namespace Servexa.API.Controllers
         {
             var shops = await _shopService.GetAllActiveShopsAsync();
             return Ok(shops);
+        }
+
+        [HttpGet("shops/{shopId:guid}/services")]
+        public async Task<IActionResult> GetShopServices(Guid shopId)
+        {
+            var result = await _serviceManagement.GetServicesForUserAsync(shopId);
+            return Ok(result);
         }
     }
 }

@@ -22,8 +22,10 @@ namespace Servexa.Application.Interfaces
         Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId);
         Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto);
         Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive);
+
         Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file);
         Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId);
+
         Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync();
     }
 }

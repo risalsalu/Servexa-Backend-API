@@ -1,4 +1,6 @@
-﻿namespace Servexa.Application.DTOs.Shop
+﻿using System;
+
+namespace Servexa.Application.DTOs.Shop
 {
     public class UpdateShopDto
     {
@@ -10,7 +12,6 @@
         public double Longitude { get; set; }
         public string Phone { get; set; } = string.Empty;
         public bool HomeServiceAvailable { get; set; }
-        public string? Services { get; set; }
-        public string? WorkingHours { get; set; }
+        public WorkingHoursDto WorkingHours { get; set; } = new();
     }
 }

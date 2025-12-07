@@ -6,6 +6,7 @@ using Servexa.Application.DTOs.Shop;
 using Servexa.Application.Interfaces;
 using System;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Servexa.API.Controllers
@@ -51,8 +52,7 @@ namespace Servexa.API.Controllers
                 Longitude = req.Longitude,
                 Phone = req.Phone,
                 HomeServiceAvailable = req.HomeServiceAvailable,
-                Services = req.Services,
-                WorkingHours = req.WorkingHours
+                WorkingHours = JsonSerializer.Deserialize<WorkingHoursDto>(req.WorkingHoursJson)
             };
 
             var (shopUrl, shopPublicId) = await _cloudinary.UploadAsync(req.ShopImage);
@@ -73,7 +73,7 @@ namespace Servexa.API.Controllers
             if (!result.Success)
                 return Error(result.Message);
 
-            return Success(result.Data, result.Message);
+            return Success(result.Data);
         }
 
         [HttpGet]
@@ -83,7 +83,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.GetShopAsync(ownerId);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data, result.Message);
+            return Success(result.Data);
         }
 
         [HttpPut]
@@ -93,7 +93,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.UpdateShopAsync(ownerId, dto);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data, result.Message);
+            return Success(result.Data);
         }
 
         [HttpPatch("activate")]
@@ -103,7 +103,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.SetActiveStatusAsync(ownerId, dto.IsActive);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data, result.Message);
+            return Success(result.Data);
         }
 
         [HttpPost("images")]
@@ -113,7 +113,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.AddShopImageAsync(ownerId, file);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data, result.Message);
+            return Success(result.Data);
         }
 
         [HttpDelete("images/{imageId:guid}")]
@@ -123,7 +123,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.DeleteShopImageAsync(ownerId, imageId);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data, result.Message);
+            return Success(result.Data);
         }
 
         private Guid GetUserId()

@@ -34,10 +34,10 @@ namespace Servexa.Infrastructure.Repositories
             const string sql = @"
 INSERT INTO Shops
 (Id, OwnerId, ShopName, CategoryId, Description, Address, Latitude, Longitude, Phone,
- HomeServiceAvailable, Services, WorkingHours, IsActive, IsDeleted, CreatedOn)
+ HomeServiceAvailable, WorkingHours, IsActive, IsDeleted, CreatedOn)
 VALUES
 (@Id, @OwnerId, @ShopName, @CategoryId, @Description, @Address, @Latitude, @Longitude, @Phone,
- @HomeServiceAvailable, @Services, @WorkingHours, @IsActive, 0, @CreatedOn)";
+ @HomeServiceAvailable, @WorkingHours, @IsActive, 0, @CreatedOn)";
 
             using var db = Conn();
             await db.ExecuteAsync(sql, shop);
@@ -72,7 +72,6 @@ Latitude = @Latitude,
 Longitude = @Longitude,
 Phone = @Phone,
 HomeServiceAvailable = @HomeServiceAvailable,
-Services = @Services,
 WorkingHours = @WorkingHours,
 ModifiedOn = @ModifiedOn
 WHERE Id = @Id";
