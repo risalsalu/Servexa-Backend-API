@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Servexa.API.Middleware;
 using Servexa.Application.Interfaces;
+using Servexa.Application.Services;
 using Servexa.Infrastructure.Repositories;
 using Servexa.Infrastructure.Repositories.Generic;
 using Servexa.Infrastructure.Services;
@@ -13,7 +14,6 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -76,6 +76,8 @@ builder.Services.AddScoped<IAdminUserManagementService, AdminUserManagementServi
 
 builder.Services.AddScoped<IShopServiceRepository, ShopServiceRepository>();
 builder.Services.AddScoped<IShopServiceManagementService, ShopServiceManagementService>();
+
+builder.Services.AddScoped<IUserShopService, UserShopService>();
 
 var cloudinaryConfig = new CloudinarySettings();
 builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinaryConfig);

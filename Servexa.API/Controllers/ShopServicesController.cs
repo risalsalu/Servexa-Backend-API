@@ -47,7 +47,12 @@ namespace Servexa.API.Controllers
             var result = await _service.AddServiceAsync(shopId.Value, dto);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+
+            return Success(new
+            {
+                Message = "Service added successfully",
+                Data = result.Data
+            });
         }
 
         [HttpPut("{serviceId:guid}")]
@@ -60,7 +65,12 @@ namespace Servexa.API.Controllers
             var result = await _service.UpdateServiceAsync(shopId.Value, serviceId, dto);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+
+            return Success(new
+            {
+                Message = "Service updated successfully",
+                Data = result.Data
+            });
         }
 
         [HttpDelete("{serviceId:guid}")]
@@ -73,7 +83,12 @@ namespace Servexa.API.Controllers
             var result = await _service.DeleteServiceAsync(shopId.Value, serviceId, shopId.Value);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+
+            return Success(new
+            {
+                Message = "Service deleted successfully",
+                Data = result.Data
+            });
         }
 
         [HttpGet]
@@ -86,7 +101,12 @@ namespace Servexa.API.Controllers
             var result = await _service.GetServicesForOwnerAsync(shopId.Value);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+
+            return Success(new
+            {
+                Message = "Services fetched successfully",
+                Data = result.Data
+            });
         }
     }
 }
