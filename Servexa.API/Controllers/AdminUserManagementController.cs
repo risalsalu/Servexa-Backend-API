@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.Interfaces;
 using System.Security.Claims;
 
-
 namespace Servexa.API.Controllers
 {
     [Authorize(Roles = "Admin")]
     [ApiController]
     [Route("api/admin/user-management")]
-    public class AdminUserManagementController : ControllerBase
+    public class AdminUserManagementController : BaseController
     {
         private readonly IAdminUserManagementService _service;
 
@@ -21,37 +20,37 @@ namespace Servexa.API.Controllers
         [HttpGet("customers")]
         public async Task<IActionResult> GetUsers()
         {
-            return Ok(await _service.GetAllUsersAsync());
+            var result = await _service.GetAllUsersAsync();
+            return Success(result, "Customers fetched successfully");
         }
 
         [HttpGet("shopowners")]
         public async Task<IActionResult> GetShopOwners()
         {
-            return Ok(await _service.GetAllShopOwnersAsync());
+            var result = await _service.GetAllShopOwnersAsync();
+            return Success(result, "Shop owners fetched successfully");
         }
 
         [HttpPut("customers/{id:guid}/status")]
         public async Task<IActionResult> SetCustomerStatus(Guid id, [FromQuery] bool isActive)
         {
-            return Ok(await _service.SetUserActiveStatusAsync(id, isActive));
+            var result = await _service.SetUserActiveStatusAsync(id, isActive);
+            return Success(result, "Customer status updated");
         }
 
         [HttpPut("shopowners/{id:guid}/status")]
         public async Task<IActionResult> SetShopOwnerStatus(Guid id, [FromQuery] bool isActive)
         {
-            return Ok(await _service.SetShopOwnerActiveStatusAsync(id, isActive));
+            var result = await _service.SetShopOwnerActiveStatusAsync(id, isActive);
+            return Success(result, "Shop owner status updated");
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
-            var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (adminIdClaim == null)
-                return Unauthorized();
-
-            var adminId = Guid.Parse(adminIdClaim.Value);
-            return Ok(await _service.DeleteUserAsync(id, adminId));
+            var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var result = await _service.DeleteUserAsync(id, adminId);
+            return Success(result, "User deleted successfully");
         }
-
     }
 }

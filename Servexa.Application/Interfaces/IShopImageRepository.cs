@@ -11,5 +11,6 @@ namespace Servexa.Application.Interfaces
         Task<ShopImage?> GetByIdAsync(Guid id);
         Task<List<ShopImage>> GetByShopIdAsync(Guid shopId);
         Task DeleteAsync(Guid id);
+        Task<string?> GetPrimaryImageUrlAsync(Guid shopId);
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace Servexa.Application.DTOs.UserServices
+﻿using System;
+
+namespace Servexa.Application.DTOs.UserServices
 {
     public class UserShopListDto
     {

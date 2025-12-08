@@ -9,7 +9,7 @@ namespace Servexa.API.Controllers
     [Authorize(Roles = "Admin")]
     [ApiController]
     [Route("api/admin/category")]
-    public class AdminCategoryController : ControllerBase
+    public class AdminCategoryController : BaseController
     {
         private readonly IAdminCategoryService _service;
 
@@ -26,25 +26,29 @@ namespace Servexa.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            return Ok(await _service.GetAllAsync());
+            var result = await _service.GetAllAsync();
+            return Success(result, "Categories fetched successfully");
         }
 
         [HttpPost]
         public async Task<IActionResult> Create(CreateCategoryDto dto)
         {
-            return Ok(await _service.CreateAsync(dto, AdminId()));
+            var result = await _service.CreateAsync(dto, AdminId());
+            return Success(result, "Category created successfully");
         }
 
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, UpdateCategoryDto dto)
         {
-            return Ok(await _service.UpdateAsync(id, dto, AdminId()));
+            var result = await _service.UpdateAsync(id, dto, AdminId());
+            return Success(result, "Category updated successfully");
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            return Ok(await _service.DeleteAsync(id, AdminId()));
+            var result = await _service.DeleteAsync(id, AdminId());
+            return Success(result, "Category deleted successfully");
         }
     }
 }

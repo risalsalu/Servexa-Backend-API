@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.Interfaces;
+using System;
+using System.Threading.Tasks;
 
 namespace Servexa.API.Controllers
 {
@@ -20,11 +22,7 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetActiveShops()
         {
             var result = await _userShopService.GetActiveShopsAsync();
-            return Success(new
-            {
-                Message = "Active shops fetched successfully",
-                Data = result
-            });
+            return Success(result, "Active shops fetched successfully");
         }
 
         [HttpGet("shops/{shopId:guid}")]
@@ -35,11 +33,7 @@ namespace Servexa.API.Controllers
             if (result == null)
                 return Error("Shop not found or inactive");
 
-            return Success(new
-            {
-                Message = "Shop services fetched successfully",
-                Data = result
-            });
+            return Success(result, "Shop services fetched successfully");
         }
     }
 }

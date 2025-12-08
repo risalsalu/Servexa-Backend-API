@@ -34,7 +34,7 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetCategories()
         {
             var result = await _categoryService.GetAllAsync();
-            return Ok(result);
+            return Success(result, "Categories fetched successfully");
         }
 
         [HttpPost("register")]
@@ -73,7 +73,7 @@ namespace Servexa.API.Controllers
             if (!result.Success)
                 return Error(result.Message);
 
-            return Success(result.Data);
+            return Success(result.Data, "Shop registered successfully");
         }
 
         [HttpGet]
@@ -83,7 +83,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.GetShopAsync(ownerId);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+            return Success(result.Data, "Shop fetched successfully");
         }
 
         [HttpPut]
@@ -93,7 +93,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.UpdateShopAsync(ownerId, dto);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+            return Success(result.Data, "Shop updated successfully");
         }
 
         [HttpPatch("activate")]
@@ -103,7 +103,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.SetActiveStatusAsync(ownerId, dto.IsActive);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+            return Success(result.Data, "Shop status updated");
         }
 
         [HttpPost("images")]
@@ -113,7 +113,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.AddShopImageAsync(ownerId, file);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+            return Success(result.Data, "Image added successfully");
         }
 
         [HttpDelete("images/{imageId:guid}")]
@@ -123,7 +123,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.DeleteShopImageAsync(ownerId, imageId);
             if (!result.Success)
                 return Error(result.Message);
-            return Success(result.Data);
+            return Success(result.Data, "Image deleted successfully");
         }
 
         private Guid GetUserId()

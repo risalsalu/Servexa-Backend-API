@@ -7,21 +7,15 @@ using System.Security.Claims;
 namespace Servexa.API.Controllers
 {
     [Authorize]
+    [ApiController]
     [Route("api/[controller]")]
-    public class UsersController : ControllerBase
+    public class UsersController : BaseController
     {
         private readonly IAuthService _authService;
-        private readonly IShopService _shopService;
-        private readonly IShopServiceManagementService _serviceManagement;
 
-        public UsersController(
-            IAuthService authService,
-            IShopService shopService,
-            IShopServiceManagementService serviceManagement)
+        public UsersController(IAuthService authService)
         {
             _authService = authService;
-            _shopService = shopService;
-            _serviceManagement = serviceManagement;
         }
 
         private Guid GetUserId()
@@ -31,8 +25,8 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> Me()
         {
             var userId = GetUserId();
-            var profile = await _authService.GetCurrentUserAsync(userId);
-            return Ok(profile);
+            var result = await _authService.GetCurrentUserAsync(userId);
+            return Success(result, "User profile fetched successfully");
         }
 
         [HttpPut("me")]
@@ -40,21 +34,7 @@ namespace Servexa.API.Controllers
         {
             var userId = GetUserId();
             await _authService.UpdateProfileAsync(userId, dto);
-            return Ok(new { Message = "Profile updated" });
-        }
-
-        [HttpGet("shops")]
-        public async Task<IActionResult> GetActiveShops()
-        {
-            var shops = await _shopService.GetAllActiveShopsAsync();
-            return Ok(shops);
-        }
-
-        [HttpGet("shops/{shopId:guid}/services")]
-        public async Task<IActionResult> GetShopServices(Guid shopId)
-        {
-            var result = await _serviceManagement.GetServicesForUserAsync(shopId);
-            return Ok(result);
+            return SuccessMessage("Profile updated successfully");
         }
     }
 }

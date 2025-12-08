@@ -1,4 +1,8 @@
-﻿using Servexa.Application.DTOs.UserServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Servexa.Application.DTOs.UserServices;
 using Servexa.Application.Interfaces;
 
 namespace Servexa.Application.Services
@@ -7,25 +11,37 @@ namespace Servexa.Application.Services
     {
         private readonly IShopRepository _shopRepository;
         private readonly IShopServiceRepository _shopServiceRepository;
+        private readonly IShopImageRepository _shopImageRepository;
 
         public UserShopService(
             IShopRepository shopRepository,
-            IShopServiceRepository shopServiceRepository)
+            IShopServiceRepository shopServiceRepository,
+            IShopImageRepository shopImageRepository)
         {
             _shopRepository = shopRepository;
             _shopServiceRepository = shopServiceRepository;
+            _shopImageRepository = shopImageRepository;
         }
 
         public async Task<IEnumerable<UserShopListDto>> GetActiveShopsAsync()
         {
             var shops = await _shopRepository.GetActiveShopsAsync();
+            var result = new List<UserShopListDto>();
 
-            return shops.Select(s => new UserShopListDto
+            foreach (var s in shops)
             {
-                ShopId = s.Id,
-                ShopName = s.ShopName,
-                Address = s.Address
-            });
+                var imageUrl = await _shopImageRepository.GetPrimaryImageUrlAsync(s.Id);
+
+                result.Add(new UserShopListDto
+                {
+                    ShopId = s.Id,
+                    ShopName = s.ShopName,
+                    Address = s.Address,
+                    ImageUrl = imageUrl
+                });
+            }
+
+            return result;
         }
 
         public async Task<UserShopWithServicesDto?> GetShopServicesAsync(Guid shopId)

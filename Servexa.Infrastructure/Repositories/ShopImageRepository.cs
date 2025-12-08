@@ -55,5 +55,15 @@ VALUES
             using var db = Conn();
             await db.ExecuteAsync(sql, new { id });
         }
+
+        public async Task<string?> GetPrimaryImageUrlAsync(Guid shopId)
+        {
+            const string sql = @"SELECT TOP 1 ImageUrl 
+                                 FROM ShopImages 
+                                 WHERE ShopId = @shopId AND IsDeleted = 0 
+                                 ORDER BY CreatedOn DESC";
+            using var db = Conn();
+            return await db.ExecuteScalarAsync<string?>(sql, new { shopId });
+        }
     }
 }
