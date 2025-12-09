@@ -157,9 +157,7 @@ namespace Servexa.Infrastructure.Services
         public async Task<string?> ForgotPasswordAsync(ForgotPasswordDto dto)
         {
             var user = await _userRepo.GetByEmailOrPhoneAsync(dto.EmailOrPhone);
-            if (user == null)
-                return null;
-
+            if (user == null) return null;
             return user.Id.ToString();
         }
 
@@ -189,7 +187,13 @@ namespace Servexa.Infrastructure.Services
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
-                Role = user.Role
+                Role = user.Role,
+                ProfileImageUrl = user.ProfileImageUrl,
+                Gender = user.Gender,
+                DateOfBirth = user.DateOfBirth,
+                Address = user.Address,
+                Bio = user.Bio,
+                BusinessName = user.BusinessName
             };
         }
 
@@ -199,7 +203,13 @@ namespace Servexa.Infrastructure.Services
                 ?? throw new ApplicationException("User not found.");
 
             user.FullName = dto.FullName;
+            user.Email = dto.Email;
             user.Phone = dto.Phone;
+            user.Gender = dto.Gender;
+            user.DateOfBirth = dto.DateOfBirth;
+            user.Address = dto.Address;
+            user.Bio = dto.Bio;
+            user.BusinessName = dto.BusinessName;
             user.ModifiedOn = DateTime.UtcNow;
             user.ModifiedBy = userId;
 

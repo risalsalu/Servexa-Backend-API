@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Users;
 using Servexa.Application.Interfaces;
@@ -19,52 +18,46 @@ namespace Servexa.API.Controllers
             _authService = authService;
         }
 
-        private Guid GetUserId()
-            => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private Guid GetUserId() =>
+            Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
-            var userId = GetUserId();
-            var result = await _authService.GetCurrentUserAsync(userId);
+            var id = GetUserId();
+            var result = await _authService.GetCurrentUserAsync(id);
             return Success(result, "User profile fetched successfully");
         }
 
         [HttpPut("me")]
         public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileDto dto)
         {
-            var userId = GetUserId();
-            await _authService.UpdateProfileAsync(userId, dto);
+            var id = GetUserId();
+            await _authService.UpdateProfileAsync(id, dto);
             return SuccessMessage("Profile updated successfully");
         }
 
         [HttpPatch("me/contact")]
         public async Task<IActionResult> UpdateContact([FromBody] UpdateContactInfoDto dto)
         {
-            var userId = GetUserId();
-            await _authService.UpdateContactInfoAsync(userId, dto);
+            var id = GetUserId();
+            await _authService.UpdateContactInfoAsync(id, dto);
             return SuccessMessage("Contact information updated successfully");
         }
 
         [HttpPost("me/profile-image")]
         public async Task<IActionResult> UploadProfileImage([FromForm] ProfileImageUploadDto dto)
         {
-            var userId = GetUserId();
-            var url = await _authService.UploadProfileImageAsync(userId, dto.File);
-
-            var response = new ProfileImageDto
-            {
-                ImageUrl = url
-            };
-
-            return Success(response, "Profile image updated successfully");
+            var id = GetUserId();
+            var url = await _authService.UploadProfileImageAsync(id, dto.File);
+            return Success(new { imageUrl = url }, "Profile image updated successfully");
         }
 
         [HttpDelete("me/profile-image")]
         public async Task<IActionResult> DeleteProfileImage()
         {
-            var userId = GetUserId();
-            await _authService.DeleteProfileImageAsync(userId);
+            var id = GetUserId();
+            await _authService.DeleteProfileImageAsync(id);
             return SuccessMessage("Profile image removed successfully");
         }
     }

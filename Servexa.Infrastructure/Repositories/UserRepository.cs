@@ -48,12 +48,12 @@ namespace Servexa.Infrastructure.Repositories
                 INSERT INTO Users (
                     Id, FullName, Email, PasswordHash, Role, Phone, IsActive, BusinessName,
                     CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, DeletedBy, DeletedOn, IsDeleted,
-                    ProfileImageUrl, ProfileImagePublicId
+                    ProfileImageUrl, ProfileImagePublicId, Gender, DateOfBirth, Address, Bio
                 )
                 VALUES (
                     @Id, @FullName, @Email, @PasswordHash, @Role, @Phone, @IsActive, @BusinessName,
                     @CreatedBy, @CreatedOn, @ModifiedBy, @ModifiedOn, @DeletedBy, @DeletedOn, @IsDeleted,
-                    @ProfileImageUrl, @ProfileImagePublicId
+                    @ProfileImageUrl, @ProfileImagePublicId, @Gender, @DateOfBirth, @Address, @Bio
                 )";
             using var conn = _connectionFactory.CreateConnection();
             await conn.ExecuteAsync(sql, user);
@@ -69,6 +69,10 @@ namespace Servexa.Infrastructure.Repositories
                     Role = @Role,
                     Phone = @Phone,
                     BusinessName = @BusinessName,
+                    Gender = @Gender,
+                    DateOfBirth = @DateOfBirth,
+                    Address = @Address,
+                    Bio = @Bio,
                     ModifiedBy = @ModifiedBy,
                     ModifiedOn = @ModifiedOn,
                     IsActive = @IsActive,
