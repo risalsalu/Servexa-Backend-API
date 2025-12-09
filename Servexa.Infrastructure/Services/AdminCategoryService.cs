@@ -43,11 +43,14 @@ namespace Servexa.Infrastructure.Services
 
             await _repo.AddAsync(entity);
 
-            return ApiResponse<CategoryResponseDto>.SuccessResponse(new CategoryResponseDto
-            {
-                Id = entity.Id,
-                Name = entity.Name
-            }, "Created.");
+            return ApiResponse<CategoryResponseDto>.SuccessResponse(
+                new CategoryResponseDto
+                {
+                    Id = entity.Id,
+                    Name = entity.Name
+                },
+                "Created."
+            );
         }
 
         public async Task<ApiResponse<CategoryResponseDto>> UpdateAsync(Guid id, UpdateCategoryDto dto, Guid adminId)
@@ -65,11 +68,14 @@ namespace Servexa.Infrastructure.Services
 
             await _repo.UpdateAsync(existing);
 
-            return ApiResponse<CategoryResponseDto>.SuccessResponse(new CategoryResponseDto
-            {
-                Id = existing.Id,
-                Name = existing.Name
-            }, "Updated.");
+            return ApiResponse<CategoryResponseDto>.SuccessResponse(
+                new CategoryResponseDto
+                {
+                    Id = existing.Id,
+                    Name = existing.Name
+                },
+                "Updated."
+            );
         }
 
         public async Task<ApiResponse<bool>> DeleteAsync(Guid id, Guid adminId)
@@ -78,9 +84,9 @@ namespace Servexa.Infrastructure.Services
             if (existing == null)
                 return ApiResponse<bool>.ErrorResponse("Not found.");
 
-            await _repo.DeleteAsync(id, adminId);
+            var result = await _repo.DeleteSoftAsync(id, adminId);
 
-            return ApiResponse<bool>.SuccessResponse(true, "Deleted.");
+            return ApiResponse<bool>.SuccessResponse(result, "Deleted.");
         }
     }
 }

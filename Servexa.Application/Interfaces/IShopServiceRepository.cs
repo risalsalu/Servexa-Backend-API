@@ -1,4 +1,5 @@
-﻿using Servexa.Domain.Models;
+﻿using Servexa.Application.DTOs.Services;
+using Servexa.Domain.Models;
 
 namespace Servexa.Application.Interfaces
 {
@@ -6,5 +7,6 @@ namespace Servexa.Application.Interfaces
     {
         Task<IEnumerable<ShopService>> GetByShopAsync(Guid shopId);
         Task<IEnumerable<ShopService>> GetActiveByShopAsync(Guid shopId);
+        Task<ShopServiceDetailsDto?> GetServiceWithDetailsAsync(Guid serviceId);
     }
 }

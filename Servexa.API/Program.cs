@@ -4,9 +4,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Servexa.API.Middleware;
 using Servexa.Application.Interfaces;
+using Servexa.Application.Interfaces.Favorites;
 using Servexa.Application.Services;
+using Servexa.Application.Services.Favorites;
 using Servexa.Infrastructure.Repositories;
-using Servexa.Infrastructure.Repositories.Generic;
 using Servexa.Infrastructure.Services;
 using Servexa.Infrastructure.Settings;
 using System.Text;
@@ -73,6 +74,9 @@ builder.Services.AddScoped<IShopServiceRepository, ShopServiceRepository>();
 builder.Services.AddScoped<IShopServiceManagementService, ShopServiceManagementService>();
 builder.Services.AddScoped<IUserShopService, UserShopService>();
 
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+
 var cloudinarySettings = new CloudinarySettings();
 builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinarySettings);
 
@@ -125,10 +129,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

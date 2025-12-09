@@ -2,6 +2,7 @@
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 using System.Data;
+using System.Linq.Expressions;
 
 namespace Servexa.Infrastructure.Repositories.Generic
 {
@@ -22,12 +23,30 @@ namespace Servexa.Infrastructure.Repositories.Generic
             return await conn.QueryAsync<T>($"SELECT * FROM {_table} WHERE IsDeleted = 0");
         }
 
+        public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>> predicate)
+        {
+            var all = await GetAllAsync();
+            return all.AsQueryable().Where(predicate).ToList();
+        }
+
         public async Task<T?> GetByIdAsync(Guid id)
         {
             using var conn = _factory.CreateConnection();
             return await conn.QueryFirstOrDefaultAsync<T>(
                 $"SELECT * FROM {_table} WHERE Id = @id AND IsDeleted = 0",
                 new { id });
+        }
+
+        public async Task<T?> GetOneAsync(Expression<Func<T, bool>> predicate)
+        {
+            var all = await GetAllAsync();
+            return all.AsQueryable().FirstOrDefault(predicate);
+        }
+
+        public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+        {
+            var all = await GetAllAsync();
+            return all.AsQueryable().Any(predicate);
         }
 
         public async Task<Guid> AddAsync(T entity)
@@ -59,7 +78,15 @@ namespace Servexa.Infrastructure.Repositories.Generic
             return await conn.ExecuteAsync(sql, entity) > 0;
         }
 
-        public async Task<bool> DeleteAsync(Guid id, Guid deletedBy)
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            using var conn = _factory.CreateConnection();
+            return await conn.ExecuteAsync(
+                $"DELETE FROM {_table} WHERE Id = @id",
+                new { id }) > 0;
+        }
+
+        public async Task<bool> DeleteSoftAsync(Guid id, Guid deletedBy)
         {
             using var conn = _factory.CreateConnection();
             return await conn.ExecuteAsync(

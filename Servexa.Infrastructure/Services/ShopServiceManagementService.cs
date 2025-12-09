@@ -18,6 +18,7 @@ namespace Servexa.Infrastructure.Services
         {
             var entity = new DomainShopService
             {
+                Id = Guid.NewGuid(),
                 ShopId = shopId,
                 CategoryId = dto.CategoryId,
                 Name = dto.Name,
@@ -25,11 +26,10 @@ namespace Servexa.Infrastructure.Services
                 Price = dto.Price,
                 DurationMinutes = dto.DurationMinutes,
                 IsActive = true,
-                CreatedAtUtc = DateTime.UtcNow
+                CreatedOn = DateTime.UtcNow
             };
 
-            var id = await _repo.AddAsync(entity);
-            entity.Id = id;
+            await _repo.AddAsync(entity);
 
             var response = new ShopServiceResponseDto
             {
@@ -41,8 +41,8 @@ namespace Servexa.Infrastructure.Services
                 Price = entity.Price,
                 DurationMinutes = entity.DurationMinutes,
                 IsActive = entity.IsActive,
-                CreatedAtUtc = entity.CreatedAtUtc,
-                UpdatedAtUtc = entity.UpdatedAtUtc
+                CreatedAtUtc = entity.CreatedOn,
+                UpdatedAtUtc = entity.ModifiedOn
             };
 
             return ApiResponse<ShopServiceResponseDto>.SuccessResponse(response);
@@ -50,7 +50,7 @@ namespace Servexa.Infrastructure.Services
 
         public async Task<ApiResponse<ShopServiceResponseDto>> UpdateServiceAsync(Guid shopId, Guid serviceId, UpdateShopServiceDto dto)
         {
-            DomainShopService? entity = await _repo.GetByIdAsync(serviceId);
+            var entity = await _repo.GetByIdAsync(serviceId);
             if (entity == null || entity.ShopId != shopId)
                 return ApiResponse<ShopServiceResponseDto>.ErrorResponse("Not found");
 
@@ -74,8 +74,8 @@ namespace Servexa.Infrastructure.Services
                 Price = entity.Price,
                 DurationMinutes = entity.DurationMinutes,
                 IsActive = entity.IsActive,
-                CreatedAtUtc = entity.CreatedAtUtc,
-                UpdatedAtUtc = entity.UpdatedAtUtc
+                CreatedAtUtc = entity.CreatedOn,
+                UpdatedAtUtc = entity.ModifiedOn
             };
 
             return ApiResponse<ShopServiceResponseDto>.SuccessResponse(response);
@@ -83,11 +83,11 @@ namespace Servexa.Infrastructure.Services
 
         public async Task<ApiResponse<bool>> DeleteServiceAsync(Guid shopId, Guid serviceId, Guid deletedBy)
         {
-            DomainShopService? entity = await _repo.GetByIdAsync(serviceId);
+            var entity = await _repo.GetByIdAsync(serviceId);
             if (entity == null || entity.ShopId != shopId)
                 return ApiResponse<bool>.ErrorResponse("Not found");
 
-            var result = await _repo.DeleteAsync(serviceId, deletedBy);
+            var result = await _repo.DeleteSoftAsync(serviceId, deletedBy);
             return ApiResponse<bool>.SuccessResponse(result);
         }
 
@@ -105,8 +105,8 @@ namespace Servexa.Infrastructure.Services
                 Price = s.Price,
                 DurationMinutes = s.DurationMinutes,
                 IsActive = s.IsActive,
-                CreatedAtUtc = s.CreatedAtUtc,
-                UpdatedAtUtc = s.UpdatedAtUtc
+                CreatedAtUtc = s.CreatedOn,
+                UpdatedAtUtc = s.ModifiedOn
             });
 
             return ApiResponse<IEnumerable<ShopServiceResponseDto>>.SuccessResponse(list);
