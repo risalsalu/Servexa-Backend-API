@@ -15,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Servexa API", Version = "v1" });
@@ -26,7 +27,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter only your JWT token"
+        Description = "Enter JWT token"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -57,40 +58,37 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
-
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-
 builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
-
 builder.Services.AddScoped<IShopRepository, ShopRepository>();
 builder.Services.AddScoped<IShopImageRepository, ShopImageRepository>();
 builder.Services.AddScoped<IShopService, ShopService>();
-
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
-
 builder.Services.AddScoped<IAdminUserManagementService, AdminUserManagementService>();
-
 builder.Services.AddScoped<IShopServiceRepository, ShopServiceRepository>();
 builder.Services.AddScoped<IShopServiceManagementService, ShopServiceManagementService>();
-
 builder.Services.AddScoped<IUserShopService, UserShopService>();
 
-var cloudinaryConfig = new CloudinarySettings();
-builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinaryConfig);
+var cloudinarySettings = new CloudinarySettings();
+builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinarySettings);
 
-var cloudinaryAccount = new Account(
-    cloudinaryConfig.CloudName,
-    cloudinaryConfig.ApiKey,
-    cloudinaryConfig.ApiSecret
-);
+builder.Services.AddSingleton(provider =>
+{
+    var account = new Account(
+        cloudinarySettings.CloudName,
+        cloudinarySettings.ApiKey,
+        cloudinarySettings.ApiSecret
+    );
 
-var cloudinary = new Cloudinary(cloudinaryAccount);
+    var cloudinary = new Cloudinary(account);
+    cloudinary.Api.Secure = true;
+    return cloudinary;
+});
 
-builder.Services.AddSingleton(cloudinary);
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");

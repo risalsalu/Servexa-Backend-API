@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Servexa.API.Controllers
 {
     [ApiController]
-    [Route("api/user/services")]
+    [Route("api/user-services")]
     [AllowAnonymous]
     public class UserServicesController : BaseController
     {
@@ -29,10 +29,8 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetShopServices(Guid shopId)
         {
             var result = await _userShopService.GetShopServicesAsync(shopId);
-
             if (result == null)
                 return Error("Shop not found or inactive");
-
             return Success(result, "Shop services fetched successfully");
         }
     }

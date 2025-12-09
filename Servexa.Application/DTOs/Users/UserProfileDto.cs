@@ -1,15 +1,12 @@
-﻿namespace Servexa.Domain.Models
+﻿namespace Servexa.Application.DTOs.Users
 {
-    public class User : BaseEntity
+    public class UserProfileDto
     {
+        public Guid Id { get; set; }
         public string FullName { get; set; } = default!;
         public string Email { get; set; } = default!;
         public string Phone { get; set; } = default!;
-        public string PasswordHash { get; set; } = default!;
         public string Role { get; set; } = default!;
-        public bool IsActive { get; set; }
-        public string? BusinessName { get; set; }
         public string? ProfileImageUrl { get; set; }
-        public string? ProfileImagePublicId { get; set; }
     }
 }

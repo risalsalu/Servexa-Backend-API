@@ -47,11 +47,13 @@ namespace Servexa.Infrastructure.Repositories
             const string sql = @"
                 INSERT INTO Users (
                     Id, FullName, Email, PasswordHash, Role, Phone, IsActive, BusinessName,
-                    CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, DeletedBy, DeletedOn, IsDeleted
+                    CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, DeletedBy, DeletedOn, IsDeleted,
+                    ProfileImageUrl, ProfileImagePublicId
                 )
                 VALUES (
                     @Id, @FullName, @Email, @PasswordHash, @Role, @Phone, @IsActive, @BusinessName,
-                    @CreatedBy, @CreatedOn, @ModifiedBy, @ModifiedOn, @DeletedBy, @DeletedOn, @IsDeleted
+                    @CreatedBy, @CreatedOn, @ModifiedBy, @ModifiedOn, @DeletedBy, @DeletedOn, @IsDeleted,
+                    @ProfileImageUrl, @ProfileImagePublicId
                 )";
             using var conn = _connectionFactory.CreateConnection();
             await conn.ExecuteAsync(sql, user);
@@ -70,7 +72,9 @@ namespace Servexa.Infrastructure.Repositories
                     ModifiedBy = @ModifiedBy,
                     ModifiedOn = @ModifiedOn,
                     IsActive = @IsActive,
-                    IsDeleted = @IsDeleted
+                    IsDeleted = @IsDeleted,
+                    ProfileImageUrl = @ProfileImageUrl,
+                    ProfileImagePublicId = @ProfileImagePublicId
                 WHERE Id = @Id";
             using var conn = _connectionFactory.CreateConnection();
             return await conn.ExecuteAsync(sql, user) > 0;
@@ -117,7 +121,6 @@ SELECT
 FROM Users u
 LEFT JOIN Shops s ON s.OwnerId = u.Id
 WHERE u.Role = 'ShopOwner' AND u.IsDeleted = 0";
-
             using var conn = _connectionFactory.CreateConnection();
             return await conn.QueryAsync<AdminShopOwnerListDto>(sql);
         }

@@ -1,7 +1,9 @@
-﻿using Servexa.Application.DTOs.Auth;
+﻿using Microsoft.AspNetCore.Http;
+using Servexa.Application.DTOs.Auth;
 using Servexa.Application.DTOs.Auth.Common;
 using Servexa.Application.DTOs.Auth.Customer;
 using Servexa.Application.DTOs.Auth.ShopOwner;
+using Servexa.Application.DTOs.Users;
 
 namespace Servexa.Application.Interfaces
 {
@@ -17,5 +19,8 @@ namespace Servexa.Application.Interfaces
         Task ResetPasswordAsync(ResetPasswordDto dto);
         Task<UserProfileDto> GetCurrentUserAsync(Guid userId);
         Task UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
+        Task UpdateContactInfoAsync(Guid userId, UpdateContactInfoDto dto);
+        Task<string?> UploadProfileImageAsync(Guid userId, IFormFile file);
+        Task DeleteProfileImageAsync(Guid userId);
     }
 }

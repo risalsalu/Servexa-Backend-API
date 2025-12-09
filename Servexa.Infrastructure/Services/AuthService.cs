@@ -5,12 +5,14 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Servexa.Application.DTOs.Auth;
 using Servexa.Application.DTOs.Auth.Common;
 using Servexa.Application.DTOs.Auth.Customer;
 using Servexa.Application.DTOs.Auth.ShopOwner;
+using Servexa.Application.DTOs.Users;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 
@@ -21,12 +23,14 @@ namespace Servexa.Infrastructure.Services
         private readonly IUserRepository _userRepo;
         private readonly ITokenRepository _tokenRepo;
         private readonly IConfiguration _config;
+        private readonly ICloudinaryService _cloudinary;
 
-        public AuthService(IUserRepository userRepo, ITokenRepository tokenRepo, IConfiguration config)
+        public AuthService(IUserRepository userRepo, ITokenRepository tokenRepo, IConfiguration config, ICloudinaryService cloudinary)
         {
             _userRepo = userRepo;
             _tokenRepo = tokenRepo;
             _config = config;
+            _cloudinary = cloudinary;
         }
 
         public async Task<AuthResponseDto> RegisterUserAsync(CustomerRegisterDto dto)
@@ -196,6 +200,62 @@ namespace Servexa.Infrastructure.Services
 
             user.FullName = dto.FullName;
             user.Phone = dto.Phone;
+            user.ModifiedOn = DateTime.UtcNow;
+            user.ModifiedBy = userId;
+
+            await _userRepo.UpdateAsync(user);
+        }
+
+        public async Task UpdateContactInfoAsync(Guid userId, UpdateContactInfoDto dto)
+        {
+            var user = await _userRepo.GetByIdAsync(userId)
+                ?? throw new ApplicationException("User not found.");
+
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+                user.FullName = dto.FullName;
+
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                user.Email = dto.Email;
+
+            if (!string.IsNullOrWhiteSpace(dto.Phone))
+                user.Phone = dto.Phone;
+
+            user.ModifiedOn = DateTime.UtcNow;
+            user.ModifiedBy = userId;
+
+            await _userRepo.UpdateAsync(user);
+        }
+
+        public async Task<string?> UploadProfileImageAsync(Guid userId, IFormFile file)
+        {
+            var user = await _userRepo.GetByIdAsync(userId)
+                ?? throw new ApplicationException("User not found.");
+
+            if (!string.IsNullOrEmpty(user.ProfileImagePublicId))
+                await _cloudinary.DeleteAsync(user.ProfileImagePublicId);
+
+            var (url, publicId) = await _cloudinary.UploadAsync(file);
+
+            user.ProfileImageUrl = url;
+            user.ProfileImagePublicId = publicId;
+            user.ModifiedOn = DateTime.UtcNow;
+            user.ModifiedBy = userId;
+
+            await _userRepo.UpdateAsync(user);
+
+            return url;
+        }
+
+        public async Task DeleteProfileImageAsync(Guid userId)
+        {
+            var user = await _userRepo.GetByIdAsync(userId)
+                ?? throw new ApplicationException("User not found.");
+
+            if (!string.IsNullOrEmpty(user.ProfileImagePublicId))
+                await _cloudinary.DeleteAsync(user.ProfileImagePublicId);
+
+            user.ProfileImageUrl = null;
+            user.ProfileImagePublicId = null;
             user.ModifiedOn = DateTime.UtcNow;
             user.ModifiedBy = userId;
 
