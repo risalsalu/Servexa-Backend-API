@@ -1,0 +1,185 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Servexa.Application.DTOs.Cart;
+using Servexa.Application.Interfaces;
+using Servexa.Domain.Models;
+using Servexa.Shared.Responses;
+
+namespace Servexa.Infrastructure.Services
+{
+    public class CartService : ICartService
+    {
+        private readonly ICartRepository _cartRepository;
+        private readonly ICartItemRepository _cartItemRepository;
+        private readonly IShopServiceRepository _shopServiceRepository;
+
+        public CartService(ICartRepository cartRepository, ICartItemRepository cartItemRepository, IShopServiceRepository shopServiceRepository)
+        {
+            _cartRepository = cartRepository;
+            _cartItemRepository = cartItemRepository;
+            _shopServiceRepository = shopServiceRepository;
+        }
+
+        public async Task<ApiResponse<CartResponseDto>> AddToCartAsync(Guid userId, AddToCartDto dto)
+        {
+            var shopService = await _shopServiceRepository.GetByIdAsync(dto.ShopServiceId);
+            if (shopService == null || shopService.ShopId != dto.ShopId)
+                return ApiResponse<CartResponseDto>.ErrorResponse("Invalid shop or service.");
+
+            var cart = await _cartRepository.GetActiveCartForUserAndShopAsync(userId, dto.ShopId);
+            if (cart == null)
+            {
+                cart = new Cart
+                {
+                    UserId = userId,
+                    ShopId = dto.ShopId
+                };
+                await _cartRepository.AddAsync(cart);
+            }
+
+            var existingItem = await _cartItemRepository.GetByCartAndServiceAsync(cart.Id, dto.ShopServiceId, dto.SelectedDateTime);
+            if (existingItem == null)
+            {
+                var newItem = new CartItem
+                {
+                    CartId = cart.Id,
+                    ShopServiceId = dto.ShopServiceId,
+                    Quantity = dto.Quantity,
+                    Price = shopService.Price,
+                    DurationMinutes = shopService.DurationMinutes,
+                    SelectedDateTime = dto.SelectedDateTime
+                };
+                await _cartItemRepository.AddAsync(newItem);
+            }
+            else
+            {
+                existingItem.Quantity += dto.Quantity;
+                existingItem.ModifiedOn = DateTime.UtcNow;
+                await _cartItemRepository.UpdateAsync(existingItem);
+            }
+
+            var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
+            var cartDto = await BuildCartResponseDto(cart, items);
+            return ApiResponse<CartResponseDto>.SuccessResponse(cartDto, "Item added to cart.");
+        }
+
+        public async Task<ApiResponse<CartResponseDto>> GetCartForShopAsync(Guid userId, Guid shopId)
+        {
+            var cart = await _cartRepository.GetActiveCartForUserAndShopAsync(userId, shopId);
+            if (cart == null)
+                return ApiResponse<CartResponseDto>.SuccessResponse(null, "Cart is empty.");
+
+            var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
+            var cartDto = await BuildCartResponseDto(cart, items);
+            return ApiResponse<CartResponseDto>.SuccessResponse(cartDto, "Cart retrieved.");
+        }
+
+        public async Task<ApiResponse<CartResponseDto>> UpdateCartItemAsync(Guid userId, Guid cartItemId, UpdateCartItemDto dto)
+        {
+            var cartItem = await _cartItemRepository.GetByIdAsync(cartItemId);
+            if (cartItem == null)
+                return ApiResponse<CartResponseDto>.ErrorResponse("Cart item not found.");
+
+            var cart = await _cartRepository.GetByIdAsync(cartItem.CartId);
+            if (cart == null || cart.UserId != userId)
+                return ApiResponse<CartResponseDto>.ErrorResponse("Cart not found.");
+
+            if (dto.Quantity.HasValue)
+                cartItem.Quantity = dto.Quantity.Value;
+
+            if (dto.SelectedDateTime.HasValue)
+                cartItem.SelectedDateTime = dto.SelectedDateTime.Value;
+
+            if (cartItem.Quantity <= 0)
+            {
+                await _cartItemRepository.DeleteAsync(cartItemId);
+            }
+            else
+            {
+                cartItem.ModifiedOn = DateTime.UtcNow;
+                await _cartItemRepository.UpdateAsync(cartItem);
+            }
+
+            var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
+            if (!items.Any())
+            {
+                await _cartRepository.DeleteAsync(cart.Id);
+                return ApiResponse<CartResponseDto>.SuccessResponse(null, "Cart is empty.");
+            }
+
+            var cartDto = await BuildCartResponseDto(cart, items);
+            return ApiResponse<CartResponseDto>.SuccessResponse(cartDto, "Cart item updated.");
+        }
+
+        public async Task<ApiResponse<bool>> RemoveCartItemAsync(Guid userId, Guid cartItemId)
+        {
+            var cartItem = await _cartItemRepository.GetByIdAsync(cartItemId);
+            if (cartItem == null)
+                return ApiResponse<bool>.ErrorResponse("Cart item not found.");
+
+            var cart = await _cartRepository.GetByIdAsync(cartItem.CartId);
+            if (cart == null || cart.UserId != userId)
+                return ApiResponse<bool>.ErrorResponse("Cart not found.");
+
+            await _cartItemRepository.DeleteAsync(cartItemId);
+
+            var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
+            if (!items.Any())
+                await _cartRepository.DeleteAsync(cart.Id);
+
+            return ApiResponse<bool>.SuccessResponse(true, "Cart item removed.");
+        }
+
+        public async Task<ApiResponse<bool>> ClearCartAsync(Guid userId, Guid shopId)
+        {
+            var cart = await _cartRepository.GetActiveCartForUserAndShopAsync(userId, shopId);
+            if (cart == null)
+                return ApiResponse<bool>.SuccessResponse(true, "Cart already empty.");
+
+            var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
+            foreach (var item in items)
+                await _cartItemRepository.DeleteAsync(item.Id);
+
+            await _cartRepository.DeleteAsync(cart.Id);
+
+            return ApiResponse<bool>.SuccessResponse(true, "Cart cleared.");
+        }
+
+        private async Task<CartResponseDto> BuildCartResponseDto(Cart cart, IEnumerable<CartItem> items)
+        {
+            var list = new List<CartItemResponseDto>();
+            decimal totalPrice = 0;
+            int totalDuration = 0;
+
+            foreach (var item in items)
+            {
+                var shopService = await _shopServiceRepository.GetByIdAsync(item.ShopServiceId);
+                var dto = new CartItemResponseDto
+                {
+                    CartItemId = item.Id,
+                    ShopServiceId = item.ShopServiceId,
+                    ServiceName = shopService != null ? shopService.Name : string.Empty,
+                    Price = item.Price,
+                    Quantity = item.Quantity,
+                    DurationMinutes = item.DurationMinutes,
+                    SelectedDateTime = item.SelectedDateTime
+                };
+
+                totalPrice += item.Price * item.Quantity;
+                totalDuration += item.DurationMinutes * item.Quantity;
+                list.Add(dto);
+            }
+
+            return new CartResponseDto
+            {
+                CartId = cart.Id,
+                ShopId = cart.ShopId,
+                Items = list,
+                TotalPrice = totalPrice,
+                TotalDurationMinutes = totalDuration
+            };
+        }
+    }
+}
