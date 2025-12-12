@@ -3,6 +3,9 @@ using Servexa.Application.DTOs.Services;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 using Servexa.Infrastructure.Repositories.Generic;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Servexa.Infrastructure.Repositories
 {
@@ -49,10 +52,7 @@ namespace Servexa.Infrastructure.Repositories
                 INNER JOIN Categories c ON c.Id = ss.CategoryId
                 WHERE ss.Id = @serviceId AND ss.IsDeleted = 0";
 
-            return await conn.QueryFirstOrDefaultAsync<ShopServiceDetailsDto>(
-                sql,
-                new { serviceId }
-            );
+            return await conn.QueryFirstOrDefaultAsync<ShopServiceDetailsDto>(sql, new { serviceId });
         }
     }
 }

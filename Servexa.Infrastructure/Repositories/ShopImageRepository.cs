@@ -26,9 +26,9 @@ namespace Servexa.Infrastructure.Repositories
 
             const string sql = @"
 INSERT INTO ShopImages
-(Id, ShopId, ImageUrl, IsDeleted, CreatedOn)
+(Id, ShopId, ImageUrl, PublicId, ImageType, IsDeleted, CreatedOn)
 VALUES
-(@Id, @ShopId, @ImageUrl, 0, @CreatedOn)";
+(@Id, @ShopId, @ImageUrl, @PublicId, @ImageType, 0, @CreatedOn)";
 
             using var db = Conn();
             await db.ExecuteAsync(sql, image);
@@ -64,6 +64,52 @@ VALUES
                                  ORDER BY CreatedOn DESC";
             using var db = Conn();
             return await db.ExecuteScalarAsync<string?>(sql, new { shopId });
+        }
+
+        public async Task UpdateExistingImageAsync(Guid shopId, string imageType, string imageUrl, string publicId)
+        {
+            const string getSql = @"SELECT TOP 1 * 
+                                    FROM ShopImages 
+                                    WHERE ShopId = @shopId AND ImageType = @imageType AND IsDeleted = 0";
+
+            using var db = Conn();
+            var existing = await db.QueryFirstOrDefaultAsync<ShopImage>(getSql, new { shopId, imageType });
+
+            if (existing == null)
+            {
+                var newImage = new ShopImage
+                {
+                    Id = Guid.NewGuid(),
+                    ShopId = shopId,
+                    ImageUrl = imageUrl,
+                    PublicId = publicId,
+                    ImageType = imageType,
+                    CreatedOn = DateTime.UtcNow,
+                    IsDeleted = false
+                };
+
+                const string insertSql = @"
+INSERT INTO ShopImages
+(Id, ShopId, ImageUrl, PublicId, ImageType, IsDeleted, CreatedOn)
+VALUES
+(@Id, @ShopId, @ImageUrl, @PublicId, @ImageType, 0, @CreatedOn)";
+
+                await db.ExecuteAsync(insertSql, newImage);
+                return;
+            }
+
+            const string updateSql = @"
+UPDATE ShopImages
+SET ImageUrl = @imageUrl,
+    PublicId = @publicId
+WHERE Id = @id";
+
+            await db.ExecuteAsync(updateSql, new
+            {
+                id = existing.Id,
+                imageUrl,
+                publicId
+            });
         }
     }
 }

@@ -16,7 +16,6 @@ namespace Servexa.Application.DTOs.Shop
         public string Phone { get; set; } = string.Empty;
         public bool HomeServiceAvailable { get; set; }
         public bool IsActive { get; set; }
-        public string? Services { get; set; }
         public string? WorkingHours { get; set; }
         public List<string> Images { get; set; } = new();
     }

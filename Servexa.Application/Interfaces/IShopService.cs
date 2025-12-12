@@ -11,19 +11,24 @@ namespace Servexa.Application.Interfaces
     {
         Task<ApiResponse<Guid>> RegisterShopAsync(
             Guid ownerId,
-            AddShopDto dto,
-            string? shopUrl,
-            string? shopPublicId,
-            string? licenseUrl,
-            string? licensePublicId,
-            string? idUrl,
-            string? idPublicId);
+            ShopUpsertRequest request,
+            IFormFile shopImage,
+            IFormFile licenseImage,
+            IFormFile idProofImage);
 
         Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId);
-        Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto);
+
+        Task<ApiResponse<bool>> UpdateShopAsync(
+            Guid ownerId,
+            ShopUpsertRequest request,
+            IFormFile shopImage,
+            IFormFile licenseImage,
+            IFormFile idProofImage);
+
         Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive);
 
         Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file);
+
         Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId);
 
         Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync();

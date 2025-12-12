@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Favorites;
 using Servexa.Application.Interfaces.Favorites;
-using System.Security.Claims;
 
 namespace Servexa.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     [ApiController]
     [Route("api/favorites")]
     public class FavoritesController : BaseController
@@ -18,8 +20,10 @@ namespace Servexa.API.Controllers
             _service = service;
         }
 
-        private Guid GetUserId() =>
-            Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private Guid GetUserId()
+        {
+            return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        }
 
         [HttpPost]
         public async Task<IActionResult> AddFavorite([FromBody] AddFavoriteDto dto)

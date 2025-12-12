@@ -2,6 +2,10 @@
 using Servexa.Application.Interfaces;
 using Servexa.Shared.Responses;
 using DomainShopService = Servexa.Domain.Models.ShopService;
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Servexa.Infrastructure.Services
 {
@@ -26,7 +30,9 @@ namespace Servexa.Infrastructure.Services
                 Price = dto.Price,
                 DurationMinutes = dto.DurationMinutes,
                 IsActive = true,
-                CreatedOn = DateTime.UtcNow
+                CreatedOn = DateTime.UtcNow,
+                ModifiedOn = DateTime.UtcNow,
+                IsDeleted = false
             };
 
             await _repo.AddAsync(entity);
@@ -87,8 +93,14 @@ namespace Servexa.Infrastructure.Services
             if (entity == null || entity.ShopId != shopId)
                 return ApiResponse<bool>.ErrorResponse("Not found");
 
-            var result = await _repo.DeleteSoftAsync(serviceId, deletedBy);
-            return ApiResponse<bool>.SuccessResponse(result);
+            entity.IsDeleted = true;
+            entity.DeletedBy = deletedBy;
+            entity.DeletedOn = DateTime.UtcNow;
+            entity.ModifiedOn = DateTime.UtcNow;
+
+            await _repo.UpdateAsync(entity);
+
+            return ApiResponse<bool>.SuccessResponse(true);
         }
 
         public async Task<ApiResponse<IEnumerable<ShopServiceResponseDto>>> GetServicesForOwnerAsync(Guid shopId)

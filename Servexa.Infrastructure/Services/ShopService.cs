@@ -4,8 +4,8 @@ using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
 using Servexa.Shared.Responses;
 using System;
-using System.Text.Json;
 using System.Linq;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -17,7 +17,10 @@ namespace Servexa.Infrastructure.Services
         private readonly IShopImageRepository _shopImageRepository;
         private readonly ICloudinaryService _cloudinary;
 
-        public ShopService(IShopRepository shopRepository, IShopImageRepository shopImageRepository, ICloudinaryService cloudinary)
+        public ShopService(
+            IShopRepository shopRepository,
+            IShopImageRepository shopImageRepository,
+            ICloudinaryService cloudinary)
         {
             _shopRepository = shopRepository;
             _shopImageRepository = shopImageRepository;
@@ -26,13 +29,10 @@ namespace Servexa.Infrastructure.Services
 
         public async Task<ApiResponse<Guid>> RegisterShopAsync(
             Guid ownerId,
-            AddShopDto dto,
-            string? shopUrl,
-            string? shopPublicId,
-            string? licenseUrl,
-            string? licensePublicId,
-            string? idUrl,
-            string? idPublicId)
+            ShopUpsertRequest request,
+            IFormFile shopImage,
+            IFormFile licenseImage,
+            IFormFile idProofImage)
         {
             var exists = await _shopRepository.OwnerHasShopAsync(ownerId);
             if (exists)
@@ -41,46 +41,55 @@ namespace Servexa.Infrastructure.Services
             var shop = new Shop
             {
                 OwnerId = ownerId,
-                ShopName = dto.ShopName,
-                CategoryId = dto.CategoryId,
-                Description = dto.Description,
-                Address = dto.Address,
-                Latitude = dto.Latitude,
-                Longitude = dto.Longitude,
-                Phone = dto.Phone,
-                HomeServiceAvailable = dto.HomeServiceAvailable,
-                WorkingHours = JsonSerializer.Serialize(dto.WorkingHours),
+                ShopName = request.ShopName,
+                CategoryId = request.CategoryId,
+                Description = request.Description,
+                Address = request.Address,
+                Latitude = request.Latitude,
+                Longitude = request.Longitude,
+                Phone = request.Phone,
+                HomeServiceAvailable = request.HomeServiceAvailable,
+                WorkingHours = JsonSerializer.Serialize(request.WorkingHours),
                 IsActive = false
             };
 
             var shopId = await _shopRepository.CreateAsync(shop);
 
-            if (shopUrl != null)
+            if (shopImage != null)
+            {
+                var (url, publicId) = await _cloudinary.UploadAsync(shopImage);
                 await _shopImageRepository.AddAsync(new ShopImage
                 {
                     ShopId = shopId,
-                    ImageUrl = shopUrl,
-                    PublicId = shopPublicId ?? "",
+                    ImageUrl = url,
+                    PublicId = publicId,
                     ImageType = "Shop"
                 });
+            }
 
-            if (licenseUrl != null)
+            if (licenseImage != null)
+            {
+                var (url, publicId) = await _cloudinary.UploadAsync(licenseImage);
                 await _shopImageRepository.AddAsync(new ShopImage
                 {
                     ShopId = shopId,
-                    ImageUrl = licenseUrl,
-                    PublicId = licensePublicId ?? "",
+                    ImageUrl = url,
+                    PublicId = publicId,
                     ImageType = "License"
                 });
+            }
 
-            if (idUrl != null)
+            if (idProofImage != null)
+            {
+                var (url, publicId) = await _cloudinary.UploadAsync(idProofImage);
                 await _shopImageRepository.AddAsync(new ShopImage
                 {
                     ShopId = shopId,
-                    ImageUrl = idUrl,
-                    PublicId = idPublicId ?? "",
+                    ImageUrl = url,
+                    PublicId = publicId,
                     ImageType = "IdProof"
                 });
+            }
 
             return ApiResponse<Guid>.SuccessResponse(shopId);
         }
@@ -113,21 +122,44 @@ namespace Servexa.Infrastructure.Services
             return ApiResponse<ShopResponseDto>.SuccessResponse(dto);
         }
 
-        public async Task<ApiResponse<bool>> UpdateShopAsync(Guid ownerId, UpdateShopDto dto)
+        public async Task<ApiResponse<bool>> UpdateShopAsync(
+            Guid ownerId,
+            ShopUpsertRequest request,
+            IFormFile shopImage,
+            IFormFile licenseImage,
+            IFormFile idProofImage)
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
                 return ApiResponse<bool>.ErrorResponse("Shop not found.");
 
-            shop.ShopName = dto.ShopName;
-            shop.CategoryId = dto.CategoryId;
-            shop.Description = dto.Description;
-            shop.Address = dto.Address;
-            shop.Latitude = dto.Latitude;
-            shop.Longitude = dto.Longitude;
-            shop.Phone = dto.Phone;
-            shop.HomeServiceAvailable = dto.HomeServiceAvailable;
-            shop.WorkingHours = JsonSerializer.Serialize(dto.WorkingHours);
+            shop.ShopName = request.ShopName;
+            shop.CategoryId = request.CategoryId;
+            shop.Description = request.Description;
+            shop.Address = request.Address;
+            shop.Latitude = request.Latitude;
+            shop.Longitude = request.Longitude;
+            shop.Phone = request.Phone;
+            shop.HomeServiceAvailable = request.HomeServiceAvailable;
+            shop.WorkingHours = JsonSerializer.Serialize(request.WorkingHours);
+
+            if (shopImage != null)
+            {
+                var (url, publicId) = await _cloudinary.UploadAsync(shopImage);
+                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, "Shop", url, publicId);
+            }
+
+            if (licenseImage != null)
+            {
+                var (url, publicId) = await _cloudinary.UploadAsync(licenseImage);
+                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, "License", url, publicId);
+            }
+
+            if (idProofImage != null)
+            {
+                var (url, publicId) = await _cloudinary.UploadAsync(idProofImage);
+                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, "IdProof", url, publicId);
+            }
 
             await _shopRepository.UpdateAsync(shop);
 
@@ -141,7 +173,6 @@ namespace Servexa.Infrastructure.Services
                 return ApiResponse<bool>.ErrorResponse("Shop not found.");
 
             await _shopRepository.SetActiveStatusAsync(ownerId, isActive);
-
             return ApiResponse<bool>.SuccessResponse(true, "Status Updated");
         }
 

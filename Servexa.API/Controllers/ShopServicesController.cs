@@ -42,7 +42,7 @@ namespace Servexa.API.Controllers
         {
             var shopId = await GetOwnerShopIdAsync();
             if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found.");
+                return Error("Shop not found");
 
             var result = await _service.AddServiceAsync(shopId.Value, dto);
             if (!result.Success)
@@ -60,7 +60,7 @@ namespace Servexa.API.Controllers
         {
             var shopId = await GetOwnerShopIdAsync();
             if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found.");
+                return Error("Shop not found");
 
             var result = await _service.UpdateServiceAsync(shopId.Value, serviceId, dto);
             if (!result.Success)
@@ -78,7 +78,7 @@ namespace Servexa.API.Controllers
         {
             var shopId = await GetOwnerShopIdAsync();
             if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found.");
+                return Error("Shop not found");
 
             var result = await _service.DeleteServiceAsync(shopId.Value, serviceId, shopId.Value);
             if (!result.Success)
@@ -96,7 +96,7 @@ namespace Servexa.API.Controllers
         {
             var shopId = await GetOwnerShopIdAsync();
             if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found.");
+                return Error("Shop not found");
 
             var result = await _service.GetServicesForOwnerAsync(shopId.Value);
             if (!result.Success)

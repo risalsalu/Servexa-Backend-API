@@ -15,7 +15,6 @@ namespace Servexa.Domain.Models
         public double Longitude { get; set; }
         public string Phone { get; set; } = string.Empty;
         public bool HomeServiceAvailable { get; set; }
-        public string? Services { get; set; }
         public string? WorkingHours { get; set; }
         public bool IsActive { get; set; }
     }

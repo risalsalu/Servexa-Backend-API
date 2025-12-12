@@ -1,4 +1,7 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Dapper;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
@@ -71,7 +74,7 @@ Phone = @Phone,
 HomeServiceAvailable = @HomeServiceAvailable,
 WorkingHours = @WorkingHours,
 ModifiedOn = @ModifiedOn
-WHERE Id = @Id";
+WHERE Id = @Id AND IsDeleted = 0";
 
             using var db = Conn();
             await db.ExecuteAsync(sql, shop);

@@ -1,12 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Servexa.API.Models;
 using Servexa.Application.DTOs.Shop;
 using Servexa.Application.Interfaces;
 using System;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Servexa.API.Controllers
@@ -17,16 +15,13 @@ namespace Servexa.API.Controllers
     public class ShopController : BaseController
     {
         private readonly IShopService _shopService;
-        private readonly ICloudinaryService _cloudinary;
         private readonly IAdminCategoryService _categoryService;
 
         public ShopController(
             IShopService shopService,
-            ICloudinaryService cloudinary,
             IAdminCategoryService categoryService)
         {
             _shopService = shopService;
-            _cloudinary = cloudinary;
             _categoryService = categoryService;
         }
 
@@ -38,37 +33,20 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromForm] AddShopRequest req)
+        public async Task<IActionResult> Register(
+            [FromForm] ShopUpsertRequest request,
+            IFormFile ShopImage,
+            IFormFile LicenseImage,
+            IFormFile IdProofImage)
         {
             var ownerId = GetUserId();
 
-            var dto = new AddShopDto
-            {
-                ShopName = req.ShopName,
-                CategoryId = req.CategoryId,
-                Description = req.Description,
-                Address = req.Address,
-                Latitude = req.Latitude,
-                Longitude = req.Longitude,
-                Phone = req.Phone,
-                HomeServiceAvailable = req.HomeServiceAvailable,
-                WorkingHours = JsonSerializer.Deserialize<WorkingHoursDto>(req.WorkingHoursJson)
-            };
-
-            var (shopUrl, shopPublicId) = await _cloudinary.UploadAsync(req.ShopImage);
-            var (licenseUrl, licensePublicId) = await _cloudinary.UploadAsync(req.LicenseImage);
-            var (idUrl, idPublicId) = await _cloudinary.UploadAsync(req.IdProofImage);
-
             var result = await _shopService.RegisterShopAsync(
                 ownerId,
-                dto,
-                shopUrl,
-                shopPublicId,
-                licenseUrl,
-                licensePublicId,
-                idUrl,
-                idPublicId
-            );
+                request,
+                ShopImage,
+                LicenseImage,
+                IdProofImage);
 
             if (!result.Success)
                 return Error(result.Message);
@@ -81,18 +59,32 @@ namespace Servexa.API.Controllers
         {
             var ownerId = GetUserId();
             var result = await _shopService.GetShopAsync(ownerId);
+
             if (!result.Success)
                 return Error(result.Message);
+
             return Success(result.Data, "Shop fetched successfully");
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Update([FromBody] UpdateShopDto dto)
+        [HttpPut("update")]
+        public async Task<IActionResult> Update(
+            [FromForm] ShopUpsertRequest request,
+            IFormFile? ShopImage,
+            IFormFile? LicenseImage,
+            IFormFile? IdProofImage)
         {
             var ownerId = GetUserId();
-            var result = await _shopService.UpdateShopAsync(ownerId, dto);
+
+            var result = await _shopService.UpdateShopAsync(
+                ownerId,
+                request,
+                ShopImage,
+                LicenseImage,
+                IdProofImage);
+
             if (!result.Success)
                 return Error(result.Message);
+
             return Success(result.Data, "Shop updated successfully");
         }
 
@@ -101,8 +93,10 @@ namespace Servexa.API.Controllers
         {
             var ownerId = GetUserId();
             var result = await _shopService.SetActiveStatusAsync(ownerId, dto.IsActive);
+
             if (!result.Success)
                 return Error(result.Message);
+
             return Success(result.Data, "Shop status updated");
         }
 
@@ -111,8 +105,10 @@ namespace Servexa.API.Controllers
         {
             var ownerId = GetUserId();
             var result = await _shopService.AddShopImageAsync(ownerId, file);
+
             if (!result.Success)
                 return Error(result.Message);
+
             return Success(result.Data, "Image added successfully");
         }
 
@@ -121,8 +117,10 @@ namespace Servexa.API.Controllers
         {
             var ownerId = GetUserId();
             var result = await _shopService.DeleteShopImageAsync(ownerId, imageId);
+
             if (!result.Success)
                 return Error(result.Message);
+
             return Success(result.Data, "Image deleted successfully");
         }
 
