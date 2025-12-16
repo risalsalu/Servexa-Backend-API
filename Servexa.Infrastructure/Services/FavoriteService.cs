@@ -20,10 +20,12 @@ namespace Servexa.Application.Services.Favorites
 
         public async Task<bool> AddFavoriteAsync(Guid userId, AddFavoriteDto dto)
         {
+            var serviceExists = await _shopServiceRepo.GetByIdAsync(dto.ShopServiceId);
+            if (serviceExists == null) return false;
+
             var exists = await _favoriteRepo.AnyAsync(x =>
                 x.UserId == userId &&
-                x.ShopServiceId == dto.ShopServiceId
-            );
+                x.ShopServiceId == dto.ShopServiceId);
 
             if (exists) return true;
 
@@ -43,8 +45,7 @@ namespace Servexa.Application.Services.Favorites
         {
             var fav = await _favoriteRepo.GetOneAsync(x =>
                 x.UserId == userId &&
-                x.ShopServiceId == dto.ShopServiceId
-            );
+                x.ShopServiceId == dto.ShopServiceId);
 
             if (fav == null) return false;
 

@@ -8,7 +8,7 @@ namespace Servexa.API.Controllers
 {
     [ApiController]
     [Route("api/user-services")]
-    [AllowAnonymous]
+    [Authorize(Roles = "Customer")]
     public class UserServicesController : BaseController
     {
         private readonly IUserShopService _userShopService;

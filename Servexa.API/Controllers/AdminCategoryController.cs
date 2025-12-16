@@ -27,28 +27,28 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _service.GetAllAsync();
-            return Success(result, "Categories fetched successfully");
+            return Ok(result);
         }
 
         [HttpPost]
         public async Task<IActionResult> Create(CreateCategoryDto dto)
         {
             var result = await _service.CreateAsync(dto, AdminId());
-            return Success(result, "Category created successfully");
+            return Ok(result);
         }
 
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, UpdateCategoryDto dto)
         {
             var result = await _service.UpdateAsync(id, dto, AdminId());
-            return Success(result, "Category updated successfully");
+            return Ok(result);
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var result = await _service.DeleteAsync(id, AdminId());
-            return Success(result, "Category deleted successfully");
+            return Ok(result);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Servexa.Infrastructure.Services
                 Name = x.Name
             });
 
-            return ApiResponse<IEnumerable<CategoryResponseDto>>.SuccessResponse(data);
+            return ApiResponse<IEnumerable<CategoryResponseDto>>.SuccessResponse(data, "Categories fetched successfully");
         }
 
         public async Task<ApiResponse<CategoryResponseDto>> CreateAsync(CreateCategoryDto dto, Guid adminId)
@@ -49,7 +49,7 @@ namespace Servexa.Infrastructure.Services
                     Id = entity.Id,
                     Name = entity.Name
                 },
-                "Created."
+                "Category created successfully"
             );
         }
 
@@ -57,10 +57,10 @@ namespace Servexa.Infrastructure.Services
         {
             var existing = await _repo.GetByIdAsync(id);
             if (existing == null)
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Not found.");
+                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category not found");
 
             if (string.IsNullOrWhiteSpace(dto.Name))
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Name is required.");
+                return ApiResponse<CategoryResponseDto>.ErrorResponse("Name is required");
 
             existing.Name = dto.Name;
             existing.ModifiedBy = adminId;
@@ -74,7 +74,7 @@ namespace Servexa.Infrastructure.Services
                     Id = existing.Id,
                     Name = existing.Name
                 },
-                "Updated."
+                "Category updated successfully"
             );
         }
 
@@ -82,11 +82,11 @@ namespace Servexa.Infrastructure.Services
         {
             var existing = await _repo.GetByIdAsync(id);
             if (existing == null)
-                return ApiResponse<bool>.ErrorResponse("Not found.");
+                return ApiResponse<bool>.ErrorResponse("Category not found");
 
-            var result = await _repo.DeleteSoftAsync(id, adminId);
+            var deleted = await _repo.DeleteSoftAsync(id, adminId);
 
-            return ApiResponse<bool>.SuccessResponse(result, "Deleted.");
+            return ApiResponse<bool>.SuccessResponse(deleted, "Category deleted successfully");
         }
     }
 }

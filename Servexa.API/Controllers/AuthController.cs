@@ -36,27 +36,95 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var result = await _authService.LoginAsync(dto);
-            return Success(result, "Login successful");
+
+            Response.Cookies.Append("access_token", result.Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddSeconds(result.ExpiresIn)
+            });
+
+            Response.Cookies.Append("refresh_token", result.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
+            return Success(new
+            {
+                result.Role,
+                result.UserId
+            }, "Login successful");
         }
 
         [HttpPost("social-login")]
         public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto dto)
         {
             var result = await _authService.SocialLoginAsync(dto);
-            return Success(result, "Social login successful");
+
+            Response.Cookies.Append("access_token", result.Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddSeconds(result.ExpiresIn)
+            });
+
+            Response.Cookies.Append("refresh_token", result.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
+            return Success(new
+            {
+                result.Role,
+                result.UserId
+            }, "Social login successful");
         }
 
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto dto)
+        public async Task<IActionResult> RefreshToken()
         {
-            var result = await _authService.RefreshTokenAsync(dto.RefreshToken);
-            return Success(result, "Token refreshed");
+            var refreshToken = Request.Cookies["refresh_token"];
+            var result = await _authService.RefreshTokenAsync(refreshToken!);
+
+            Response.Cookies.Append("access_token", result.Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddSeconds(result.ExpiresIn)
+            });
+
+            Response.Cookies.Append("refresh_token", result.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
+            return Success(new
+            {
+                result.Role,
+                result.UserId
+            }, "Token refreshed");
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto)
         {
             await _authService.LogoutAsync(dto.UserId);
+
+            Response.Cookies.Delete("access_token");
+            Response.Cookies.Delete("refresh_token");
+
             return SuccessMessage("Logged out");
         }
 

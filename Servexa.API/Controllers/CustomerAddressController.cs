@@ -9,7 +9,7 @@ namespace Servexa.API.Controllers
 {
     [ApiController]
     [Route("api/customers/addresses")]
-    [Authorize(Roles = "User")]
+    [Authorize(Roles = "Customer")]
     public class CustomerAddressController : BaseController
     {
         private readonly ICustomerAddressService _service;

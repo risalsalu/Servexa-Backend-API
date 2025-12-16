@@ -21,28 +21,28 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetUsers()
         {
             var result = await _service.GetAllUsersAsync();
-            return Success(result, "Customers fetched successfully");
+            return Ok(result);
         }
 
         [HttpGet("shopowners")]
         public async Task<IActionResult> GetShopOwners()
         {
             var result = await _service.GetAllShopOwnersAsync();
-            return Success(result, "Shop owners fetched successfully");
+            return Ok(result);
         }
 
         [HttpPut("customers/{id:guid}/status")]
         public async Task<IActionResult> SetCustomerStatus(Guid id, [FromQuery] bool isActive)
         {
             var result = await _service.SetUserActiveStatusAsync(id, isActive);
-            return Success(result, "Customer status updated");
+            return Ok(result);
         }
 
         [HttpPut("shopowners/{id:guid}/status")]
         public async Task<IActionResult> SetShopOwnerStatus(Guid id, [FromQuery] bool isActive)
         {
             var result = await _service.SetShopOwnerActiveStatusAsync(id, isActive);
-            return Success(result, "Shop owner status updated");
+            return Ok(result);
         }
 
         [HttpDelete("{id:guid}")]
@@ -50,7 +50,7 @@ namespace Servexa.API.Controllers
         {
             var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var result = await _service.DeleteUserAsync(id, adminId);
-            return Success(result, "User deleted successfully");
+            return Ok(result);
         }
     }
 }

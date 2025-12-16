@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Servexa.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     [ApiController]
     [Route("api/users")]
     public class UsersController : BaseController

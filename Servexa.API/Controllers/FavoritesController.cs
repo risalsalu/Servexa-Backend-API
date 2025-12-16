@@ -28,24 +28,26 @@ namespace Servexa.API.Controllers
         [HttpPost]
         public async Task<IActionResult> AddFavorite([FromBody] AddFavoriteDto dto)
         {
-            var id = GetUserId();
-            await _service.AddFavoriteAsync(id, dto);
+            var userId = GetUserId();
+            var ok = await _service.AddFavoriteAsync(userId, dto);
+            if (!ok) return Error("Service not found");
             return SuccessMessage("Service added to favorites successfully");
         }
 
         [HttpDelete]
         public async Task<IActionResult> RemoveFavorite([FromBody] RemoveFavoriteDto dto)
         {
-            var id = GetUserId();
-            await _service.RemoveFavoriteAsync(id, dto);
+            var userId = GetUserId();
+            var ok = await _service.RemoveFavoriteAsync(userId, dto);
+            if (!ok) return Error("Favorite service not found");
             return SuccessMessage("Service removed from favorites successfully");
         }
 
         [HttpGet]
         public async Task<IActionResult> GetFavorites()
         {
-            var id = GetUserId();
-            var result = await _service.GetUserFavoritesAsync(id);
+            var userId = GetUserId();
+            var result = await _service.GetUserFavoritesAsync(userId);
             return Success(result, "Favorites fetched successfully");
         }
     }

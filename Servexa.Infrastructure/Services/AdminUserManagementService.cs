@@ -29,37 +29,34 @@ namespace Servexa.Infrastructure.Services
                     IsActive = u.IsActive
                 });
 
-            return ApiResponse<IEnumerable<AdminUserListDto>>.SuccessResponse(dto);
+            return ApiResponse<IEnumerable<AdminUserListDto>>.SuccessResponse(dto, "Customers fetched successfully");
         }
 
         public async Task<ApiResponse<IEnumerable<AdminShopOwnerListDto>>> GetAllShopOwnersAsync()
         {
             var owners = await _repo.GetAllShopOwnersWithShopStatusAsync();
-            return ApiResponse<IEnumerable<AdminShopOwnerListDto>>.SuccessResponse(owners);
+            return ApiResponse<IEnumerable<AdminShopOwnerListDto>>.SuccessResponse(owners, "Shop owners fetched successfully");
         }
 
         public async Task<ApiResponse<bool>> SetUserActiveStatusAsync(Guid id, bool isActive)
         {
             var updated = await _repo.SetActiveStatusAsync(id, isActive);
-            if (!updated)
-                return ApiResponse<bool>.ErrorResponse("Failed.");
-            return ApiResponse<bool>.SuccessResponse(true, "Updated.");
+            if (!updated) return ApiResponse<bool>.ErrorResponse("Failed to update status");
+            return ApiResponse<bool>.SuccessResponse(true, "Customer status updated");
         }
 
         public async Task<ApiResponse<bool>> SetShopOwnerActiveStatusAsync(Guid id, bool isActive)
         {
             var updated = await _repo.SetActiveStatusAsync(id, isActive);
-            if (!updated)
-                return ApiResponse<bool>.ErrorResponse("Failed.");
-            return ApiResponse<bool>.SuccessResponse(true, "Updated.");
+            if (!updated) return ApiResponse<bool>.ErrorResponse("Failed to update status");
+            return ApiResponse<bool>.SuccessResponse(true, "Shop owner status updated");
         }
 
         public async Task<ApiResponse<bool>> DeleteUserAsync(Guid id, Guid adminId)
         {
             var deleted = await _repo.SoftDeleteAsync(id, adminId);
-            if (!deleted)
-                return ApiResponse<bool>.ErrorResponse("Failed.");
-            return ApiResponse<bool>.SuccessResponse(true, "Deleted.");
+            if (!deleted) return ApiResponse<bool>.ErrorResponse("Failed to delete user");
+            return ApiResponse<bool>.SuccessResponse(true, "User deleted successfully");
         }
     }
 }
