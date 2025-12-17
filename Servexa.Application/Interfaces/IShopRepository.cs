@@ -12,7 +12,8 @@ namespace Servexa.Application.Interfaces
         Task<Shop?> GetByOwnerIdAsync(Guid ownerId);
         Task<Shop?> GetByIdAsync(Guid id);
         Task UpdateAsync(Shop shop);
-        Task SetActiveStatusAsync(Guid ownerId, bool isActive);
+        Task SetActiveStatusAsync(Guid ownerId, bool isActive, string? offlineReason);
         Task<IEnumerable<Shop>> GetActiveShopsAsync();
+        Task<IEnumerable<Shop>> GetAllAsync();
     }
 }

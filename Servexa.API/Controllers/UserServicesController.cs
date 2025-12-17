@@ -19,19 +19,21 @@ namespace Servexa.API.Controllers
         }
 
         [HttpGet("shops")]
-        public async Task<IActionResult> GetActiveShops()
+        public async Task<IActionResult> GetShops()
         {
-            var result = await _userShopService.GetActiveShopsAsync();
-            return Success(result, "Active shops fetched successfully");
+            var result = await _userShopService.GetShopsAsync();
+            return Success(result, "Shops fetched successfully");
         }
 
         [HttpGet("shops/{shopId:guid}")]
         public async Task<IActionResult> GetShopServices(Guid shopId)
         {
             var result = await _userShopService.GetShopServicesAsync(shopId);
+
             if (result == null)
-                return Error("Shop not found or inactive");
-            return Success(result, "Shop services fetched successfully");
+                return Error("Shop not found");
+
+            return Success(result, "Shop details fetched successfully");
         }
     }
 }

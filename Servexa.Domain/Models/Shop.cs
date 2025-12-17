@@ -17,5 +17,6 @@ namespace Servexa.Domain.Models
         public bool HomeServiceAvailable { get; set; }
         public string? WorkingHours { get; set; }
         public bool IsActive { get; set; }
+        public string? OfflineReason { get; set; }
     }
 }

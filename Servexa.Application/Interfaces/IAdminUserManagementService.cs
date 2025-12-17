@@ -1,5 +1,8 @@
 ﻿using Servexa.Application.DTOs.Admin;
 using Servexa.Shared.Responses;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Servexa.Application.Interfaces
 {

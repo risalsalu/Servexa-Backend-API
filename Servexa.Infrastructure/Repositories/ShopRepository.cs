@@ -34,10 +34,10 @@ namespace Servexa.Infrastructure.Repositories
             const string sql = @"
 INSERT INTO Shops
 (Id, OwnerId, ShopName, CategoryId, Description, Address, Latitude, Longitude, Phone,
- HomeServiceAvailable, WorkingHours, IsActive, IsDeleted, CreatedOn)
+ HomeServiceAvailable, WorkingHours, IsActive, OfflineReason, IsDeleted, CreatedOn)
 VALUES
 (@Id, @OwnerId, @ShopName, @CategoryId, @Description, @Address, @Latitude, @Longitude, @Phone,
- @HomeServiceAvailable, @WorkingHours, @IsActive, 0, @CreatedOn)";
+ @HomeServiceAvailable, @WorkingHours, @IsActive, @OfflineReason, 0, @CreatedOn)";
 
             using var db = Conn();
             await db.ExecuteAsync(sql, shop);
@@ -80,16 +80,33 @@ WHERE Id = @Id AND IsDeleted = 0";
             await db.ExecuteAsync(sql, shop);
         }
 
-        public async Task SetActiveStatusAsync(Guid ownerId, bool isActive)
+        public async Task SetActiveStatusAsync(Guid ownerId, bool isActive, string? offlineReason)
         {
-            const string sql = "UPDATE Shops SET IsActive = @isActive WHERE OwnerId = @ownerId AND IsDeleted = 0";
+            const string sql = @"
+UPDATE Shops
+SET IsActive = @isActive,
+    OfflineReason = @offlineReason
+WHERE OwnerId = @ownerId AND IsDeleted = 0";
+
             using var db = Conn();
-            await db.ExecuteAsync(sql, new { ownerId, isActive });
+            await db.ExecuteAsync(sql, new
+            {
+                ownerId,
+                isActive,
+                offlineReason = isActive ? null : offlineReason
+            });
         }
 
         public async Task<IEnumerable<Shop>> GetActiveShopsAsync()
         {
             const string sql = "SELECT * FROM Shops WHERE IsDeleted = 0 AND IsActive = 1";
+            using var db = Conn();
+            return await db.QueryAsync<Shop>(sql);
+        }
+
+        public async Task<IEnumerable<Shop>> GetAllAsync()
+        {
+            const string sql = "SELECT * FROM Shops WHERE IsDeleted = 0";
             using var db = Conn();
             return await db.QueryAsync<Shop>(sql);
         }

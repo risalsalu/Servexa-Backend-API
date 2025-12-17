@@ -88,11 +88,11 @@ namespace Servexa.API.Controllers
             return Success(result.Data, "Shop updated successfully");
         }
 
-        [HttpPatch("activate")]
-        public async Task<IActionResult> Activate([FromBody] ActivateShopDto dto)
+        [HttpPatch("status")]
+        public async Task<IActionResult> UpdateStatus([FromBody] ActivateShopDto dto)
         {
             var ownerId = GetUserId();
-            var result = await _shopService.SetActiveStatusAsync(ownerId, dto.IsActive);
+            var result = await _shopService.SetActiveStatusAsync(ownerId, dto);
 
             if (!result.Success)
                 return Error(result.Message);

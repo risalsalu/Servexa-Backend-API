@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.Interfaces;
+using System;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Servexa.API.Controllers
 {
@@ -48,7 +50,7 @@ namespace Servexa.API.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
-            var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _service.DeleteUserAsync(id, adminId);
             return Ok(result);
         }

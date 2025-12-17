@@ -25,7 +25,7 @@ namespace Servexa.Application.Interfaces
             IFormFile licenseImage,
             IFormFile idProofImage);
 
-        Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive);
+        Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, ActivateShopDto dto);
 
         Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file);
 

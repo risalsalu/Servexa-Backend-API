@@ -23,9 +23,9 @@ namespace Servexa.Application.Services
             _shopImageRepository = shopImageRepository;
         }
 
-        public async Task<IEnumerable<UserShopListDto>> GetActiveShopsAsync()
+        public async Task<IEnumerable<UserShopListDto>> GetShopsAsync()
         {
-            var shops = await _shopRepository.GetActiveShopsAsync();
+            var shops = await _shopRepository.GetAllAsync();
             var result = new List<UserShopListDto>();
 
             foreach (var s in shops)
@@ -37,7 +37,9 @@ namespace Servexa.Application.Services
                     ShopId = s.Id,
                     ShopName = s.ShopName,
                     Address = s.Address,
-                    ImageUrl = imageUrl
+                    ImageUrl = imageUrl,
+                    IsActive = s.IsActive,
+                    OfflineReason = s.OfflineReason
                 });
             }
 
@@ -47,16 +49,19 @@ namespace Servexa.Application.Services
         public async Task<UserShopWithServicesDto?> GetShopServicesAsync(Guid shopId)
         {
             var shop = await _shopRepository.GetByIdAsync(shopId);
-
-            if (shop == null || !shop.IsActive)
+            if (shop == null)
                 return null;
 
-            var services = await _shopServiceRepository.GetActiveByShopAsync(shopId);
+            var services = shop.IsActive
+                ? await _shopServiceRepository.GetActiveByShopAsync(shopId)
+                : Enumerable.Empty<Domain.Models.ShopService>();
 
             return new UserShopWithServicesDto
             {
                 ShopId = shop.Id,
                 ShopName = shop.ShopName,
+                IsActive = shop.IsActive,
+                OfflineReason = shop.OfflineReason,
                 Services = services.Select(s => new UserServiceListDto
                 {
                     ServiceId = s.Id,

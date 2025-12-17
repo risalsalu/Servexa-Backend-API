@@ -50,7 +50,8 @@ namespace Servexa.Infrastructure.Services
                 Phone = request.Phone,
                 HomeServiceAvailable = request.HomeServiceAvailable,
                 WorkingHours = JsonSerializer.Serialize(request.WorkingHours),
-                IsActive = false
+                IsActive = false,
+                OfflineReason = null
             };
 
             var shopId = await _shopRepository.CreateAsync(shop);
@@ -116,6 +117,7 @@ namespace Servexa.Infrastructure.Services
                 HomeServiceAvailable = shop.HomeServiceAvailable,
                 WorkingHours = shop.WorkingHours,
                 IsActive = shop.IsActive,
+                OfflineReason = shop.OfflineReason,
                 Images = images.Select(i => i.ImageUrl).ToList()
             };
 
@@ -166,13 +168,21 @@ namespace Servexa.Infrastructure.Services
             return ApiResponse<bool>.SuccessResponse(true);
         }
 
-        public async Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, bool isActive)
+        public async Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, ActivateShopDto dto)
         {
-            var exists = await _shopRepository.OwnerHasShopAsync(ownerId);
-            if (!exists)
+            var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
+            if (shop == null)
                 return ApiResponse<bool>.ErrorResponse("Shop not found.");
 
-            await _shopRepository.SetActiveStatusAsync(ownerId, isActive);
+            if (!dto.IsActive && string.IsNullOrWhiteSpace(dto.OfflineReason))
+                return ApiResponse<bool>.ErrorResponse("Offline reason is required.");
+
+            await _shopRepository.SetActiveStatusAsync(
+                ownerId,
+                dto.IsActive,
+                dto.IsActive ? null : dto.OfflineReason
+            );
+
             return ApiResponse<bool>.SuccessResponse(true, "Status Updated");
         }
 
@@ -232,7 +242,8 @@ namespace Servexa.Infrastructure.Services
                 Phone = s.Phone,
                 HomeServiceAvailable = s.HomeServiceAvailable,
                 WorkingHours = s.WorkingHours,
-                IsActive = s.IsActive
+                IsActive = s.IsActive,
+                OfflineReason = s.OfflineReason
             });
 
             return ApiResponse<IEnumerable<ShopResponseDto>>.SuccessResponse(result);

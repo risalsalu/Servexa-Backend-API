@@ -8,5 +8,7 @@ namespace Servexa.Application.DTOs.UserServices
         public string ShopName { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public bool IsActive { get; set; }
+        public string? OfflineReason { get; set; }
     }
 }
