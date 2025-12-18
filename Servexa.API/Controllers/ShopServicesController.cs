@@ -24,89 +24,69 @@ namespace Servexa.API.Controllers
 
         private Guid GetUserId()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+            return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         }
 
         private async Task<Guid?> GetOwnerShopIdAsync()
         {
-            var ownerId = GetUserId();
-            var result = await _shopService.GetShopAsync(ownerId);
-            if (!result.Success || result.Data == null)
-                return null;
-            return result.Data.ShopId;
+            var result = await _shopService.GetShopAsync(GetUserId());
+            return result.Success ? result.Data?.ShopId : null;
         }
 
         [HttpPost]
         public async Task<IActionResult> AddService([FromBody] AddShopServiceDto dto)
         {
             var shopId = await GetOwnerShopIdAsync();
-            if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found");
+            if (shopId == null)
+                return NotFoundError("Shop not found");
 
             var result = await _service.AddServiceAsync(shopId.Value, dto);
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
-            return Success(new
-            {
-                Message = "Service added successfully",
-                Data = result.Data
-            });
+            return Created(result.Data, "Service added successfully");
         }
 
         [HttpPut("{serviceId:guid}")]
         public async Task<IActionResult> UpdateService(Guid serviceId, [FromBody] UpdateShopServiceDto dto)
         {
             var shopId = await GetOwnerShopIdAsync();
-            if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found");
+            if (shopId == null)
+                return NotFoundError("Shop not found");
 
             var result = await _service.UpdateServiceAsync(shopId.Value, serviceId, dto);
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
-            return Success(new
-            {
-                Message = "Service updated successfully",
-                Data = result.Data
-            });
+            return Success(result.Data, "Service updated successfully");
         }
 
         [HttpDelete("{serviceId:guid}")]
         public async Task<IActionResult> DeleteService(Guid serviceId)
         {
             var shopId = await GetOwnerShopIdAsync();
-            if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found");
+            if (shopId == null)
+                return NotFoundError("Shop not found");
 
             var result = await _service.DeleteServiceAsync(shopId.Value, serviceId, shopId.Value);
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
-            return Success(new
-            {
-                Message = "Service deleted successfully",
-                Data = result.Data
-            });
+            return SuccessMessage("Service deleted successfully");
         }
 
         [HttpGet]
         public async Task<IActionResult> GetOwnerServices()
         {
             var shopId = await GetOwnerShopIdAsync();
-            if (shopId == null || shopId == Guid.Empty)
-                return Error("Shop not found");
+            if (shopId == null)
+                return NotFoundError("Shop not found");
 
             var result = await _service.GetServicesForOwnerAsync(shopId.Value);
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
-            return Success(new
-            {
-                Message = "Services fetched successfully",
-                Data = result.Data
-            });
+            return Success(result.Data, "Services fetched successfully");
         }
     }
 }

@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.Interfaces;
-using System;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Servexa.API.Controllers
 {
@@ -23,28 +21,28 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetUsers()
         {
             var result = await _service.GetAllUsersAsync();
-            return Ok(result);
+            return Success(result, "Customers fetched successfully");
         }
 
         [HttpGet("shopowners")]
         public async Task<IActionResult> GetShopOwners()
         {
             var result = await _service.GetAllShopOwnersAsync();
-            return Ok(result);
+            return Success(result, "Shop owners fetched successfully");
         }
 
         [HttpPut("customers/{id:guid}/status")]
         public async Task<IActionResult> SetCustomerStatus(Guid id, [FromQuery] bool isActive)
         {
             var result = await _service.SetUserActiveStatusAsync(id, isActive);
-            return Ok(result);
+            return Success(result, "Customer status updated");
         }
 
         [HttpPut("shopowners/{id:guid}/status")]
         public async Task<IActionResult> SetShopOwnerStatus(Guid id, [FromQuery] bool isActive)
         {
             var result = await _service.SetShopOwnerActiveStatusAsync(id, isActive);
-            return Ok(result);
+            return Success(result, "Shop owner status updated");
         }
 
         [HttpDelete("{id:guid}")]
@@ -52,7 +50,7 @@ namespace Servexa.API.Controllers
         {
             var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _service.DeleteUserAsync(id, adminId);
-            return Ok(result);
+            return Success(result, "User deleted");
         }
     }
 }

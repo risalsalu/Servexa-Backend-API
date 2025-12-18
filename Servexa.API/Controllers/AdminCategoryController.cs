@@ -20,35 +20,47 @@ namespace Servexa.API.Controllers
 
         private Guid AdminId()
         {
-            return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var result = await _service.GetAllAsync();
-            return Ok(result);
+            if (!result.Success)
+                return BadRequestError(result.Message);
+
+            return Success(result.Data, result.Message);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(CreateCategoryDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateCategoryDto dto)
         {
             var result = await _service.CreateAsync(dto, AdminId());
-            return Ok(result);
+            if (!result.Success)
+                return BadRequestError(result.Message);
+
+            return Created(result.Data, result.Message);
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<IActionResult> Update(Guid id, UpdateCategoryDto dto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryDto dto)
         {
             var result = await _service.UpdateAsync(id, dto, AdminId());
-            return Ok(result);
+            if (!result.Success)
+                return BadRequestError(result.Message);
+
+            return Success(result.Data, result.Message);
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var result = await _service.DeleteAsync(id, AdminId());
-            return Ok(result);
+            if (!result.Success)
+                return BadRequestError(result.Message);
+
+            return Success(result.Data, result.Message);
         }
     }
 }

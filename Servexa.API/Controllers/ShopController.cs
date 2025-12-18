@@ -4,9 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Shop;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
-using System;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Servexa.API.Controllers
 {
@@ -34,25 +32,21 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(
-            [FromForm] ShopUpsertRequest request,
-            IFormFile? shopImage,
-            IFormFile? licenseImage,
-            IFormFile? idProofImage)
+        public async Task<IActionResult> Register([FromBody] ShopUpsertRequest request)
         {
             var ownerId = GetUserId();
 
             var result = await _shopService.RegisterShopAsync(
                 ownerId,
                 request,
-                shopImage,
-                licenseImage,
-                idProofImage);
+                null,
+                null,
+                null);
 
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
-            return Success(result.Data, "Shop registered successfully");
+            return Created(result.Data, "Shop registered successfully");
         }
 
         [HttpGet]
@@ -62,29 +56,25 @@ namespace Servexa.API.Controllers
             var result = await _shopService.GetShopAsync(ownerId);
 
             if (!result.Success)
-                return Error(result.Message);
+                return NotFoundError(result.Message);
 
             return Success(result.Data, "Shop fetched successfully");
         }
 
         [HttpPut("update")]
-        public async Task<IActionResult> Update(
-            [FromForm] ShopUpsertRequest request,
-            IFormFile? shopImage,
-            IFormFile? licenseImage,
-            IFormFile? idProofImage)
+        public async Task<IActionResult> Update([FromBody] ShopUpsertRequest request)
         {
             var ownerId = GetUserId();
 
             var result = await _shopService.UpdateShopAsync(
                 ownerId,
                 request,
-                shopImage,
-                licenseImage,
-                idProofImage);
+                null,
+                null,
+                null);
 
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
             return Success(result.Data, "Shop updated successfully");
         }
@@ -96,7 +86,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.SetActiveStatusAsync(ownerId, dto);
 
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
             return Success(result.Data, "Shop status updated");
         }
@@ -110,7 +100,7 @@ namespace Servexa.API.Controllers
             var result = await _shopService.AddShopImageAsync(ownerId, file, imageType);
 
             if (!result.Success)
-                return Error(result.Message);
+                return BadRequestError(result.Message);
 
             return Success(result.Data, "Image added successfully");
         }
@@ -122,15 +112,14 @@ namespace Servexa.API.Controllers
             var result = await _shopService.DeleteShopImageAsync(ownerId, imageId);
 
             if (!result.Success)
-                return Error(result.Message);
+                return NotFoundError(result.Message);
 
             return Success(result.Data, "Image deleted successfully");
         }
 
         private Guid GetUserId()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+            return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         }
     }
 }

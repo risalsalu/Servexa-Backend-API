@@ -25,10 +25,12 @@ namespace Servexa.API.Middleware
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 context.Response.ContentType = "application/json";
 
-                var response = ApiResponse<string>.ErrorResponse(ex.Message);
+                var response = ApiResponse<string>.ErrorResponse(
+                    ex.Message,
+                    context.Response.StatusCode
+                );
 
                 var json = JsonSerializer.Serialize(response);
-
                 await context.Response.WriteAsync(json);
             }
         }

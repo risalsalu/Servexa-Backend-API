@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.Interfaces;
-using System;
-using System.Threading.Tasks;
 
 namespace Servexa.API.Controllers
 {
@@ -29,9 +27,8 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetShopServices(Guid shopId)
         {
             var result = await _userShopService.GetShopServicesAsync(shopId);
-
             if (result == null)
-                return Error("Shop not found");
+                return NotFoundError("Shop not found");
 
             return Success(result, "Shop details fetched successfully");
         }

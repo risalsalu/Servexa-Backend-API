@@ -1,5 +1,6 @@
 using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Servexa.API.Middleware;
@@ -14,12 +15,21 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Servexa API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Servexa API",
+        Version = "v1"
+    });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -127,19 +137,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var path = context.HttpContext.Request.Path;
 
                 if (path.StartsWithSegments("/swagger"))
-                {
                     return Task.CompletedTask;
-                }
 
                 if (context.Request.Headers.ContainsKey("Authorization"))
-                {
                     return Task.CompletedTask;
-                }
 
                 if (context.Request.Cookies.ContainsKey("access_token"))
-                {
                     context.Token = context.Request.Cookies["access_token"];
-                }
 
                 return Task.CompletedTask;
             }

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Favorites;
 using Servexa.Application.Interfaces.Favorites;
+using System.Security.Claims;
 
 namespace Servexa.API.Controllers
 {
@@ -28,27 +26,28 @@ namespace Servexa.API.Controllers
         [HttpPost]
         public async Task<IActionResult> AddFavorite([FromBody] AddFavoriteDto dto)
         {
-            var userId = GetUserId();
-            var ok = await _service.AddFavoriteAsync(userId, dto);
-            if (!ok) return Error("Service not found");
-            return SuccessMessage("Service added to favorites successfully");
+            var ok = await _service.AddFavoriteAsync(GetUserId(), dto);
+            if (!ok)
+                return NotFoundError("Service not found");
+
+            return SuccessMessage("Added to favorites");
         }
 
         [HttpDelete]
         public async Task<IActionResult> RemoveFavorite([FromBody] RemoveFavoriteDto dto)
         {
-            var userId = GetUserId();
-            var ok = await _service.RemoveFavoriteAsync(userId, dto);
-            if (!ok) return Error("Favorite service not found");
-            return SuccessMessage("Service removed from favorites successfully");
+            var ok = await _service.RemoveFavoriteAsync(GetUserId(), dto);
+            if (!ok)
+                return NotFoundError("Favorite not found");
+
+            return SuccessMessage("Removed from favorites");
         }
 
         [HttpGet]
         public async Task<IActionResult> GetFavorites()
         {
-            var userId = GetUserId();
-            var result = await _service.GetUserFavoritesAsync(userId);
-            return Success(result, "Favorites fetched successfully");
+            var result = await _service.GetUserFavoritesAsync(GetUserId());
+            return Success(result, "Favorites fetched");
         }
     }
 }
