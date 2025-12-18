@@ -58,19 +58,26 @@ VALUES
 
         public async Task<string?> GetPrimaryImageUrlAsync(Guid shopId)
         {
-            const string sql = @"SELECT TOP 1 ImageUrl 
-                                 FROM ShopImages 
-                                 WHERE ShopId = @shopId AND IsDeleted = 0 
-                                 ORDER BY CreatedOn DESC";
+            const string sql = @"
+SELECT TOP 1 ImageUrl
+FROM ShopImages
+WHERE ShopId = @shopId AND IsDeleted = 0 AND ImageType = @imageType
+ORDER BY CreatedOn DESC";
+
             using var db = Conn();
-            return await db.ExecuteScalarAsync<string?>(sql, new { shopId });
+            return await db.ExecuteScalarAsync<string?>(sql, new
+            {
+                shopId,
+                imageType = ShopImageType.Shop
+            });
         }
 
-        public async Task UpdateExistingImageAsync(Guid shopId, string imageType, string imageUrl, string publicId)
+        public async Task UpdateExistingImageAsync(Guid shopId, ShopImageType imageType, string imageUrl, string publicId)
         {
-            const string getSql = @"SELECT TOP 1 * 
-                                    FROM ShopImages 
-                                    WHERE ShopId = @shopId AND ImageType = @imageType AND IsDeleted = 0";
+            const string getSql = @"
+SELECT TOP 1 *
+FROM ShopImages
+WHERE ShopId = @shopId AND ImageType = @imageType AND IsDeleted = 0";
 
             using var db = Conn();
             var existing = await db.QueryFirstOrDefaultAsync<ShopImage>(getSql, new { shopId, imageType });
@@ -113,3 +120,4 @@ WHERE Id = @id";
         }
     }
 }
+    

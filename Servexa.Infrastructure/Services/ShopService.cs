@@ -30,9 +30,9 @@ namespace Servexa.Infrastructure.Services
         public async Task<ApiResponse<Guid>> RegisterShopAsync(
             Guid ownerId,
             ShopUpsertRequest request,
-            IFormFile shopImage,
-            IFormFile licenseImage,
-            IFormFile idProofImage)
+            IFormFile? shopImage,
+            IFormFile? licenseImage,
+            IFormFile? idProofImage)
         {
             var exists = await _shopRepository.OwnerHasShopAsync(ownerId);
             if (exists)
@@ -64,7 +64,7 @@ namespace Servexa.Infrastructure.Services
                     ShopId = shopId,
                     ImageUrl = url,
                     PublicId = publicId,
-                    ImageType = "Shop"
+                    ImageType = ShopImageType.Shop
                 });
             }
 
@@ -76,7 +76,7 @@ namespace Servexa.Infrastructure.Services
                     ShopId = shopId,
                     ImageUrl = url,
                     PublicId = publicId,
-                    ImageType = "License"
+                    ImageType = ShopImageType.License
                 });
             }
 
@@ -88,7 +88,7 @@ namespace Servexa.Infrastructure.Services
                     ShopId = shopId,
                     ImageUrl = url,
                     PublicId = publicId,
-                    ImageType = "IdProof"
+                    ImageType = ShopImageType.OwnerId
                 });
             }
 
@@ -118,7 +118,13 @@ namespace Servexa.Infrastructure.Services
                 WorkingHours = shop.WorkingHours,
                 IsActive = shop.IsActive,
                 OfflineReason = shop.OfflineReason,
-                Images = images.Select(i => i.ImageUrl).ToList()
+                Images = images.Select(i => new ShopImageDto
+                {
+                    ImageId = i.Id,
+                    ImageUrl = i.ImageUrl,
+                    ImageType = (int)i.ImageType,
+                    ImageTypeName = i.ImageType.ToString()
+                }).ToList()
             };
 
             return ApiResponse<ShopResponseDto>.SuccessResponse(dto);
@@ -127,9 +133,9 @@ namespace Servexa.Infrastructure.Services
         public async Task<ApiResponse<bool>> UpdateShopAsync(
             Guid ownerId,
             ShopUpsertRequest request,
-            IFormFile shopImage,
-            IFormFile licenseImage,
-            IFormFile idProofImage)
+            IFormFile? shopImage,
+            IFormFile? licenseImage,
+            IFormFile? idProofImage)
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
@@ -148,19 +154,31 @@ namespace Servexa.Infrastructure.Services
             if (shopImage != null)
             {
                 var (url, publicId) = await _cloudinary.UploadAsync(shopImage);
-                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, "Shop", url, publicId);
+                await _shopImageRepository.UpdateExistingImageAsync(
+                    shop.Id,
+                    ShopImageType.Shop,
+                    url,
+                    publicId);
             }
 
             if (licenseImage != null)
             {
                 var (url, publicId) = await _cloudinary.UploadAsync(licenseImage);
-                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, "License", url, publicId);
+                await _shopImageRepository.UpdateExistingImageAsync(
+                    shop.Id,
+                    ShopImageType.License,
+                    url,
+                    publicId);
             }
 
             if (idProofImage != null)
             {
                 var (url, publicId) = await _cloudinary.UploadAsync(idProofImage);
-                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, "IdProof", url, publicId);
+                await _shopImageRepository.UpdateExistingImageAsync(
+                    shop.Id,
+                    ShopImageType.OwnerId,
+                    url,
+                    publicId);
             }
 
             await _shopRepository.UpdateAsync(shop);
@@ -183,10 +201,13 @@ namespace Servexa.Infrastructure.Services
                 dto.IsActive ? null : dto.OfflineReason
             );
 
-            return ApiResponse<bool>.SuccessResponse(true, "Status Updated");
+            return ApiResponse<bool>.SuccessResponse(true);
         }
 
-        public async Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file)
+        public async Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(
+            Guid ownerId,
+            IFormFile file,
+            ShopImageType imageType)
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
@@ -199,13 +220,14 @@ namespace Servexa.Infrastructure.Services
                 ShopId = shop.Id,
                 ImageUrl = url,
                 PublicId = publicId,
-                ImageType = "Gallery"
+                ImageType = imageType
             });
 
             return ApiResponse<AddShopImageDto>.SuccessResponse(new AddShopImageDto
             {
-                ImageId = image.Id,
-                ImageUrl = image.ImageUrl
+                ShopId = shop.Id,
+                ImageBase64 = string.Empty,
+                ImageType = (int)image.ImageType
             });
         }
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Shop;
 using Servexa.Application.Interfaces;
+using Servexa.Domain.Models;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -35,18 +36,18 @@ namespace Servexa.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromForm] ShopUpsertRequest request,
-            IFormFile ShopImage,
-            IFormFile LicenseImage,
-            IFormFile IdProofImage)
+            IFormFile? shopImage,
+            IFormFile? licenseImage,
+            IFormFile? idProofImage)
         {
             var ownerId = GetUserId();
 
             var result = await _shopService.RegisterShopAsync(
                 ownerId,
                 request,
-                ShopImage,
-                LicenseImage,
-                IdProofImage);
+                shopImage,
+                licenseImage,
+                idProofImage);
 
             if (!result.Success)
                 return Error(result.Message);
@@ -69,18 +70,18 @@ namespace Servexa.API.Controllers
         [HttpPut("update")]
         public async Task<IActionResult> Update(
             [FromForm] ShopUpsertRequest request,
-            IFormFile? ShopImage,
-            IFormFile? LicenseImage,
-            IFormFile? IdProofImage)
+            IFormFile? shopImage,
+            IFormFile? licenseImage,
+            IFormFile? idProofImage)
         {
             var ownerId = GetUserId();
 
             var result = await _shopService.UpdateShopAsync(
                 ownerId,
                 request,
-                ShopImage,
-                LicenseImage,
-                IdProofImage);
+                shopImage,
+                licenseImage,
+                idProofImage);
 
             if (!result.Success)
                 return Error(result.Message);
@@ -101,10 +102,12 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost("images")]
-        public async Task<IActionResult> AddImage(IFormFile file)
+        public async Task<IActionResult> AddImage(
+            IFormFile file,
+            [FromQuery] ShopImageType imageType)
         {
             var ownerId = GetUserId();
-            var result = await _shopService.AddShopImageAsync(ownerId, file);
+            var result = await _shopService.AddShopImageAsync(ownerId, file, imageType);
 
             if (!result.Success)
                 return Error(result.Message);

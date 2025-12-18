@@ -2,6 +2,9 @@
 using Servexa.Application.DTOs.Admin;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Servexa.Infrastructure.Repositories
 {
@@ -45,16 +48,16 @@ namespace Servexa.Infrastructure.Repositories
         public async Task CreateAsync(User user)
         {
             const string sql = @"
-                INSERT INTO Users (
-                    Id, FullName, Email, PasswordHash, Role, Phone, IsActive, BusinessName,
-                    CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, DeletedBy, DeletedOn, IsDeleted,
-                    ProfileImageUrl, ProfileImagePublicId, Gender, DateOfBirth, Address, Bio
-                )
-                VALUES (
-                    @Id, @FullName, @Email, @PasswordHash, @Role, @Phone, @IsActive, @BusinessName,
-                    @CreatedBy, @CreatedOn, @ModifiedBy, @ModifiedOn, @DeletedBy, @DeletedOn, @IsDeleted,
-                    @ProfileImageUrl, @ProfileImagePublicId, @Gender, @DateOfBirth, @Address, @Bio
-                )";
+INSERT INTO Users (
+    Id, FullName, Email, PasswordHash, Role, Phone, IsActive, BusinessName,
+    CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, DeletedBy, DeletedOn, IsDeleted,
+    ProfileImageUrl, ProfileImagePublicId, Gender, DateOfBirth, Address, Bio
+)
+VALUES (
+    @Id, @FullName, @Email, @PasswordHash, @Role, @Phone, @IsActive, @BusinessName,
+    @CreatedBy, @CreatedOn, @ModifiedBy, @ModifiedOn, @DeletedBy, @DeletedOn, @IsDeleted,
+    @ProfileImageUrl, @ProfileImagePublicId, @Gender, @DateOfBirth, @Address, @Bio
+)";
             using var conn = _connectionFactory.CreateConnection();
             await conn.ExecuteAsync(sql, user);
         }
@@ -62,24 +65,24 @@ namespace Servexa.Infrastructure.Repositories
         public async Task<bool> UpdateAsync(User user)
         {
             const string sql = @"
-                UPDATE Users SET
-                    FullName = @FullName,
-                    Email = @Email,
-                    PasswordHash = @PasswordHash,
-                    Role = @Role,
-                    Phone = @Phone,
-                    BusinessName = @BusinessName,
-                    Gender = @Gender,
-                    DateOfBirth = @DateOfBirth,
-                    Address = @Address,
-                    Bio = @Bio,
-                    ModifiedBy = @ModifiedBy,
-                    ModifiedOn = @ModifiedOn,
-                    IsActive = @IsActive,
-                    IsDeleted = @IsDeleted,
-                    ProfileImageUrl = @ProfileImageUrl,
-                    ProfileImagePublicId = @ProfileImagePublicId
-                WHERE Id = @Id";
+UPDATE Users SET
+    FullName = @FullName,
+    Email = @Email,
+    PasswordHash = @PasswordHash,
+    Role = @Role,
+    Phone = @Phone,
+    BusinessName = @BusinessName,
+    Gender = @Gender,
+    DateOfBirth = @DateOfBirth,
+    Address = @Address,
+    Bio = @Bio,
+    ModifiedBy = @ModifiedBy,
+    ModifiedOn = @ModifiedOn,
+    IsActive = @IsActive,
+    IsDeleted = @IsDeleted,
+    ProfileImageUrl = @ProfileImageUrl,
+    ProfileImagePublicId = @ProfileImagePublicId
+WHERE Id = @Id";
             using var conn = _connectionFactory.CreateConnection();
             return await conn.ExecuteAsync(sql, user) > 0;
         }
@@ -101,11 +104,11 @@ namespace Servexa.Infrastructure.Repositories
         public async Task<bool> SoftDeleteAsync(Guid id, Guid deletedBy)
         {
             const string sql = @"
-                UPDATE Users
-                SET IsDeleted = 1,
-                    DeletedBy = @deletedBy,
-                    DeletedOn = @now
-                WHERE Id = @id";
+UPDATE Users
+SET IsDeleted = 1,
+    DeletedBy = @deletedBy,
+    DeletedOn = @now
+WHERE Id = @id";
             using var conn = _connectionFactory.CreateConnection();
             return await conn.ExecuteAsync(sql, new { id, deletedBy, now = DateTime.UtcNow }) > 0;
         }
@@ -113,18 +116,20 @@ namespace Servexa.Infrastructure.Repositories
         public async Task<IEnumerable<AdminShopOwnerListDto>> GetAllShopOwnersWithShopStatusAsync()
         {
             const string sql = @"
-SELECT 
+SELECT
     u.Id,
-    u.FullName AS OwnerName,
-    u.BusinessName,
+    u.FullName,
     u.Email,
     u.Phone,
+    u.IsActive,
+    s.Id AS ShopId,
     s.ShopName,
-    u.IsActive AS UserIsActive,
-    s.IsActive AS ShopIsActive
+    s.IsActive AS ShopIsActive,
+    s.OfflineReason AS ShopOfflineReason
 FROM Users u
-LEFT JOIN Shops s ON s.OwnerId = u.Id
-WHERE u.Role = 'ShopOwner' AND u.IsDeleted = 0";
+LEFT JOIN Shops s ON s.OwnerId = u.Id AND s.IsDeleted = 0
+WHERE u.Role = 'ShopOwner' AND u.IsDeleted = 0
+";
             using var conn = _connectionFactory.CreateConnection();
             return await conn.QueryAsync<AdminShopOwnerListDto>(sql);
         }

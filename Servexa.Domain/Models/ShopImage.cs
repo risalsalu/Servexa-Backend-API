@@ -7,6 +7,6 @@ namespace Servexa.Domain.Models
         public Guid ShopId { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
         public string PublicId { get; set; } = string.Empty;
-        public string ImageType { get; set; } = string.Empty;
+        public ShopImageType ImageType { get; set; }
     }
 }

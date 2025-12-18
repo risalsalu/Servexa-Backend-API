@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Servexa.Application.DTOs.Shop;
+using Servexa.Domain.Models;
 using Servexa.Shared.Responses;
 
 namespace Servexa.Application.Interfaces
@@ -12,22 +13,25 @@ namespace Servexa.Application.Interfaces
         Task<ApiResponse<Guid>> RegisterShopAsync(
             Guid ownerId,
             ShopUpsertRequest request,
-            IFormFile shopImage,
-            IFormFile licenseImage,
-            IFormFile idProofImage);
+            IFormFile? shopImage,
+            IFormFile? licenseImage,
+            IFormFile? idProofImage);
 
         Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId);
 
         Task<ApiResponse<bool>> UpdateShopAsync(
             Guid ownerId,
             ShopUpsertRequest request,
-            IFormFile shopImage,
-            IFormFile licenseImage,
-            IFormFile idProofImage);
+            IFormFile? shopImage,
+            IFormFile? licenseImage,
+            IFormFile? idProofImage);
 
         Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, ActivateShopDto dto);
 
-        Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(Guid ownerId, IFormFile file);
+        Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(
+            Guid ownerId,
+            IFormFile file,
+            ShopImageType imageType);
 
         Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId);
 

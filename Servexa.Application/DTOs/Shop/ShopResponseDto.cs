@@ -18,6 +18,6 @@ namespace Servexa.Application.DTOs.Shop
         public bool IsActive { get; set; }
         public string? OfflineReason { get; set; }
         public string? WorkingHours { get; set; }
-        public List<string> Images { get; set; } = new();
+        public List<ShopImageDto> Images { get; set; } = new();
     }
 }

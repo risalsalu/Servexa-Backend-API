@@ -1,5 +1,8 @@
 ﻿using Servexa.Domain.Models;
 using Servexa.Application.DTOs.Admin;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Servexa.Application.Interfaces
 {

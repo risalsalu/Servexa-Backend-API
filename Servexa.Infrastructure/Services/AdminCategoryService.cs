@@ -30,7 +30,10 @@ namespace Servexa.Infrastructure.Services
         public async Task<ApiResponse<CategoryResponseDto>> CreateAsync(CreateCategoryDto dto, Guid adminId)
         {
             if (string.IsNullOrWhiteSpace(dto.Name))
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Name is required.");
+                return ApiResponse<CategoryResponseDto>.ErrorResponse("Name is required");
+
+            if (await _repo.ExistsByNameAsync(dto.Name))
+                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
 
             var entity = new Category
             {
@@ -41,7 +44,14 @@ namespace Servexa.Infrastructure.Services
                 IsDeleted = false
             };
 
-            await _repo.AddAsync(entity);
+            try
+            {
+                await _repo.AddAsync(entity);
+            }
+            catch
+            {
+                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
+            }
 
             return ApiResponse<CategoryResponseDto>.SuccessResponse(
                 new CategoryResponseDto
@@ -62,11 +72,21 @@ namespace Servexa.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(dto.Name))
                 return ApiResponse<CategoryResponseDto>.ErrorResponse("Name is required");
 
+            if (await _repo.ExistsByNameExceptIdAsync(id, dto.Name))
+                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
+
             existing.Name = dto.Name;
             existing.ModifiedBy = adminId;
             existing.ModifiedOn = DateTime.UtcNow;
 
-            await _repo.UpdateAsync(existing);
+            try
+            {
+                await _repo.UpdateAsync(existing);
+            }
+            catch
+            {
+                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
+            }
 
             return ApiResponse<CategoryResponseDto>.SuccessResponse(
                 new CategoryResponseDto
