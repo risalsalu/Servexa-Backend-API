@@ -9,6 +9,7 @@ using Servexa.Application.Interfaces.Favorites;
 using Servexa.Application.Services;
 using Servexa.Application.Services.Favorites;
 using Servexa.Infrastructure.Repositories;
+using Servexa.Infrastructure.Repositories.Generic;
 using Servexa.Infrastructure.Services;
 using Servexa.Infrastructure.Settings;
 using System.Text;
@@ -89,6 +90,11 @@ builder.Services.AddScoped<IShopServiceManagementService, ShopServiceManagementS
 builder.Services.AddScoped<IUserShopService, UserShopService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<ICartService, CartService>();
+
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IBookingItemRepository, BookingItemRepository>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
 var cloudinarySettings = new CloudinarySettings();
 builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinarySettings);

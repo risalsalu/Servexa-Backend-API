@@ -1,14 +1,13 @@
 ﻿using Dapper;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
-using System.Data;
 using System.Linq.Expressions;
 
 namespace Servexa.Infrastructure.Repositories.Generic
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
     {
-        private readonly IDbConnectionFactory _factory;
+        protected readonly IDbConnectionFactory _factory;
         private readonly string _table;
 
         public GenericRepository(IDbConnectionFactory factory)
@@ -95,3 +94,4 @@ namespace Servexa.Infrastructure.Repositories.Generic
         }
     }
 }
+    
