@@ -27,6 +27,10 @@ namespace Servexa.Infrastructure.Services
             if (shop == null || shop.OwnerId != ownerId)
                 throw new Exception("Unauthorized shop access");
 
+            var alreadyExists = await _slotRepository.SlotsExistForDateAsync(dto.ShopId, dto.Date);
+            if (alreadyExists)
+                throw new Exception("Slots already exist for this date");
+
             var created = 0;
             var current = dto.Date.Date + dto.StartTime;
             var end = dto.Date.Date + dto.EndTime;
@@ -35,18 +39,14 @@ namespace Servexa.Infrastructure.Services
             {
                 var slotEnd = current.AddMinutes(30);
 
-                var exists = await _slotRepository.SlotExistsAsync(dto.ShopId, current, slotEnd);
-                if (!exists)
+                await _slotRepository.AddAsync(new Slot
                 {
-                    await _slotRepository.AddAsync(new Slot
-                    {
-                        ShopId = dto.ShopId,
-                        StartTime = current,
-                        EndTime = slotEnd
-                    });
-                    created++;
-                }
+                    ShopId = dto.ShopId,
+                    StartTime = current,
+                    EndTime = slotEnd
+                });
 
+                created++;
                 current = slotEnd;
             }
 

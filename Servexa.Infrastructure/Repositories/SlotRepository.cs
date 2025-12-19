@@ -55,6 +55,19 @@ AND EndTime > @start";
             return await db.ExecuteScalarAsync<int>(sql, new { shopId, start, end }) > 0;
         }
 
+        public async Task<bool> SlotsExistForDateAsync(Guid shopId, DateTime date)
+        {
+            const string sql = @"
+SELECT COUNT(1)
+FROM Slots
+WHERE ShopId = @shopId
+AND CAST(StartTime AS DATE) = @date
+AND IsDeleted = 0";
+
+            using var db = Conn();
+            return await db.ExecuteScalarAsync<int>(sql, new { shopId, date = date.Date }) > 0;
+        }
+
         public async Task AddAsync(Slot slot)
         {
             slot.Id = Guid.NewGuid();

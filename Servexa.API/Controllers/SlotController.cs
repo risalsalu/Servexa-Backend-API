@@ -26,6 +26,9 @@ namespace Servexa.API.Controllers
             if (dto == null)
                 return BadRequestError("Invalid request body");
 
+            if (dto.Date == default)
+                return BadRequestError("Date is required");
+
             var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var count = await _slotService.CreateSlotsAsync(dto, ownerId);
             return Success(count, "Slots created successfully");
@@ -35,6 +38,9 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> Get(Guid shopId, [FromQuery] DateTime date)
         {
+            if (date == default)
+                return BadRequestError("Date is required");
+
             var result = await _slotService.GetAvailableSlotsAsync(shopId, date);
             return Success(result, "Slots fetched successfully");
         }
