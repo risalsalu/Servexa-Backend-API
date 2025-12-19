@@ -80,6 +80,10 @@ builder.Services.AddScoped<IShopServiceRepository, ShopServiceRepository>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<ISlotRepository, SlotRepository>();
+builder.Services.AddScoped<ISlotRepository, SlotRepository>();
+
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
@@ -90,11 +94,12 @@ builder.Services.AddScoped<IShopServiceManagementService, ShopServiceManagementS
 builder.Services.AddScoped<IUserShopService, UserShopService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<ICartService, CartService>();
-
-builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-builder.Services.AddScoped<IBookingItemRepository, BookingItemRepository>();
 builder.Services.AddScoped<IBookingService, BookingService>();
-builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+builder.Services.AddScoped<ISlotService, SlotService>();
+
+
+
+
 
 var cloudinarySettings = new CloudinarySettings();
 builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinarySettings);

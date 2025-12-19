@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Servexa.Application.DTOs.Booking;
@@ -9,89 +10,93 @@ namespace Servexa.Infrastructure.Services
 {
     public class BookingService : IBookingService
     {
-        private readonly ICartService _cartService;
         private readonly IBookingRepository _bookingRepository;
-        private readonly IBookingItemRepository _bookingItemRepository;
+        private readonly ISlotRepository _slotRepository;
+        private readonly ICartService _cartService;
+        private readonly ICustomerAddressRepository _addressRepository;
 
         public BookingService(
-            ICartService cartService,
             IBookingRepository bookingRepository,
-            IBookingItemRepository bookingItemRepository)
+            ISlotRepository slotRepository,
+            ICartService cartService,
+            ICustomerAddressRepository addressRepository)
         {
-            _cartService = cartService;
             _bookingRepository = bookingRepository;
-            _bookingItemRepository = bookingItemRepository;
+            _slotRepository = slotRepository;
+            _cartService = cartService;
+            _addressRepository = addressRepository;
         }
 
-        public async Task<BookingResponseDto> CreateAsync(Guid customerId, CreateBookingFromCartDto dto)
+        public async Task<BookingResponseDto> CreateAsync(CreateBookingDto dto, Guid customerId)
         {
-            if (dto.ServiceMode == ServiceMode.Home && dto.AddressId == null)
-                throw new Exception("Address required");
+            if (dto.ServiceMode == ServiceMode.Home)
+            {
+                if (!dto.AddressId.HasValue)
+                    throw new Exception("Address is required for home service");
+
+                var address = await _addressRepository.GetByIdAsync(dto.AddressId.Value);
+                if (address == null || address.UserId != customerId || address.IsDeleted)
+                    throw new Exception("Invalid address");
+            }
+
+            if (dto.ServiceMode == ServiceMode.Onsite)
+            {
+                if (!dto.SlotId.HasValue)
+                    throw new Exception("Slot is required for onsite service");
+
+                var available = await _slotRepository.IsSlotAvailableAsync(dto.SlotId.Value);
+                if (!available)
+                    throw new Exception("Selected slot is already booked");
+
+                var locked = await _slotRepository.LockSlotAsync(dto.SlotId.Value, customerId);
+                if (!locked)
+                    throw new Exception("Failed to lock slot");
+            }
 
             var cartResponse = await _cartService.GetCartForShopAsync(customerId, dto.ShopId);
+            var cart = cartResponse.Data;
 
-            if (cartResponse.Data == null || !cartResponse.Data.Items.Any())
+            if (cart == null || cart.Items == null || !cart.Items.Any())
                 throw new Exception("Cart is empty");
 
-            var cart = cartResponse.Data;
+            var totalAmount = cart.TotalPrice;
 
             var booking = new Booking
             {
-                UserId = customerId,
-                ShopId = cart.ShopId,
-                AddressId = dto.ServiceMode == ServiceMode.Home ? dto.AddressId : null,
-                BookingDate = dto.BookingDate,
-                SlotStart = dto.SlotStart,
-                SlotEnd = dto.SlotEnd,
-                TotalAmount = cart.Items.Sum(x => x.Price * x.Quantity),
-                Status = BookingStatus.Pending,
+                CustomerId = customerId,
+                ShopId = dto.ShopId,
                 ServiceMode = dto.ServiceMode,
-                CreatedBy = customerId
+                AddressId = dto.AddressId,
+                SlotId = dto.SlotId,
+                Amount = totalAmount,
+                Status = "Booked"
             };
 
-            await _bookingRepository.AddAsync(booking);
-
-            foreach (var item in cart.Items)
-            {
-                await _bookingItemRepository.AddAsync(
-                    booking.Id,
-                    new BookingItemDto
-                    {
-                        ServiceId = item.ShopServiceId,
-                        ServiceName = item.ServiceName,
-                        Price = item.Price,
-                        DurationMinutes = item.DurationMinutes
-                    },
-                    customerId
-                );
-            }
-
-            await _cartService.ClearCartAsync(customerId, cart.ShopId);
+            var bookingId = await _bookingRepository.CreateAsync(booking);
 
             return new BookingResponseDto
             {
-                BookingId = booking.Id,
-                Status = booking.Status.ToString()
+                BookingId = bookingId,
+                Amount = totalAmount,
+                Status = "Booked"
             };
         }
 
-        public async Task<BookingSummaryDto> GetSummaryAsync(Guid bookingId)
+        public async Task<IEnumerable<BookingDetailDto>> GetByCustomerAsync(Guid customerId)
         {
-            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            var bookings = await _bookingRepository.GetByCustomerAsync(customerId);
 
-            return new BookingSummaryDto
+            return bookings.Select(b => new BookingDetailDto
             {
-                BookingId = booking.Id,
-                TotalAmount = booking.TotalAmount,
-                Status = booking.Status.ToString(),
-                ServiceMode = booking.ServiceMode.ToString()
-            };
-        }
-
-        public async Task UpdateStatusAsync(UpdateBookingStatusDto dto, Guid updatedBy)
-        {
-            var status = Enum.Parse<BookingStatus>(dto.Status, true);
-            await _bookingRepository.UpdateStatusAsync(dto.BookingId, status, updatedBy);
+                BookingId = b.Id,
+                ShopId = b.ShopId,
+                ServiceMode = b.ServiceMode,
+                AddressId = b.AddressId,
+                SlotId = b.SlotId,
+                Amount = b.Amount,
+                Status = b.Status,
+                CreatedOn = b.CreatedOn
+            });
         }
     }
 }

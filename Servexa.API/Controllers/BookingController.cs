@@ -8,9 +8,9 @@ using Servexa.Application.Interfaces;
 
 namespace Servexa.API.Controllers
 {
-    [Authorize(Roles = "Customer")]
     [ApiController]
     [Route("api/bookings")]
+    [Authorize(Roles = "Customer")]
     public class BookingController : BaseController
     {
         private readonly IBookingService _bookingService;
@@ -21,16 +21,22 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateBookingFromCartDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateBookingDto dto)
         {
+            if (dto == null)
+                return BadRequestError("Invalid request body");
+
             var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            return Success(await _bookingService.CreateAsync(customerId, dto));
+            var result = await _bookingService.CreateAsync(dto, customerId);
+            return Success(result, "Booking created successfully");
         }
 
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> Summary(Guid id)
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyBookings()
         {
-            return Success(await _bookingService.GetSummaryAsync(id));
+            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.GetByCustomerAsync(customerId);
+            return Success(result, "Bookings fetched successfully");
         }
     }
 }
