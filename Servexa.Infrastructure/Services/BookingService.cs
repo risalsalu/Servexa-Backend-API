@@ -27,30 +27,34 @@ namespace Servexa.Infrastructure.Services
             _addressRepository = addressRepository;
         }
 
-        public async Task<BookingResponseDto> CreateAsync(CreateBookingDto dto, Guid customerId)
+        public async Task<BookingResponseDto> CreateBookingAfterPaymentAsync(
+            Guid customerId,
+            CreateBookingAfterPaymentDto dto)
         {
-            if (dto.ServiceMode == ServiceMode.Home)
+            var serviceMode = Enum.Parse<ServiceMode>(dto.ServiceMode, true);
+
+            if (serviceMode == ServiceMode.Home)
             {
                 if (!dto.AddressId.HasValue)
-                    throw new Exception("Address is required for home service");
+                    throw new Exception("Address is required");
 
                 var address = await _addressRepository.GetByIdAsync(dto.AddressId.Value);
                 if (address == null || address.UserId != customerId || address.IsDeleted)
                     throw new Exception("Invalid address");
             }
 
-            if (dto.ServiceMode == ServiceMode.Onsite)
+            if (serviceMode == ServiceMode.Onsite)
             {
                 if (!dto.SlotId.HasValue)
-                    throw new Exception("Slot is required for onsite service");
+                    throw new Exception("Slot is required");
 
                 var available = await _slotRepository.IsSlotAvailableAsync(dto.SlotId.Value);
                 if (!available)
-                    throw new Exception("Selected slot is already booked");
+                    throw new Exception("Slot already booked");
 
                 var locked = await _slotRepository.LockSlotAsync(dto.SlotId.Value, customerId);
                 if (!locked)
-                    throw new Exception("Failed to lock slot");
+                    throw new Exception("Slot lock failed");
             }
 
             var cartResponse = await _cartService.GetCartForShopAsync(customerId, dto.ShopId);
@@ -59,26 +63,38 @@ namespace Servexa.Infrastructure.Services
             if (cart == null || cart.Items == null || !cart.Items.Any())
                 throw new Exception("Cart is empty");
 
-            var totalAmount = cart.TotalPrice;
-
             var booking = new Booking
             {
                 CustomerId = customerId,
                 ShopId = dto.ShopId,
-                ServiceMode = dto.ServiceMode,
+                PaymentId = dto.PaymentId,
+                ServiceMode = serviceMode,
                 AddressId = dto.AddressId,
                 SlotId = dto.SlotId,
-                Amount = totalAmount,
-                Status = "Booked"
+                Amount = dto.Amount,
+                Status = BookingStatus.Confirmed,
+                CreatedAt = DateTime.UtcNow
             };
 
             var bookingId = await _bookingRepository.CreateAsync(booking);
 
+            var items = dto.Services.Select(s => new BookingItem
+            {
+                BookingId = bookingId,
+                ServiceId = s.ServiceId,
+                Price = s.Price,
+                DurationInMinutes = s.DurationInMinutes
+            });
+
+            await _bookingRepository.AddItemsAsync(items);
+
+            await _cartService.ClearCartAsync(customerId, dto.ShopId);
+
             return new BookingResponseDto
             {
                 BookingId = bookingId,
-                Amount = totalAmount,
-                Status = "Booked"
+                Amount = booking.Amount,
+                Status = booking.Status.ToString()
             };
         }
 
@@ -90,13 +106,71 @@ namespace Servexa.Infrastructure.Services
             {
                 BookingId = b.Id,
                 ShopId = b.ShopId,
-                ServiceMode = b.ServiceMode,
+                ServiceMode = b.ServiceMode.ToString(),
                 AddressId = b.AddressId,
                 SlotId = b.SlotId,
                 Amount = b.Amount,
-                Status = b.Status,
-                CreatedOn = b.CreatedOn
+                Status = b.Status.ToString(),
+                CreatedAt = b.CreatedAt
             });
+        }
+
+        public async Task<IEnumerable<BookingDetailDto>> GetByShopAsync(Guid shopOwnerId)
+        {
+            var bookings = await _bookingRepository.GetByShopAsync(shopOwnerId);
+
+            return bookings.Select(b => new BookingDetailDto
+            {
+                BookingId = b.Id,
+                ShopId = b.ShopId,
+                ServiceMode = b.ServiceMode.ToString(),
+                AddressId = b.AddressId,
+                SlotId = b.SlotId,
+                Amount = b.Amount,
+                Status = b.Status.ToString(),
+                CreatedAt = b.CreatedAt
+            });
+        }
+
+        public async Task<BookingDetailDto> GetByIdAsync(Guid bookingId)
+        {
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null)
+                throw new Exception("Booking not found");
+
+            return new BookingDetailDto
+            {
+                BookingId = booking.Id,
+                ShopId = booking.ShopId,
+                ServiceMode = booking.ServiceMode.ToString(),
+                AddressId = booking.AddressId,
+                SlotId = booking.SlotId,
+                Amount = booking.Amount,
+                Status = booking.Status.ToString(),
+                CreatedAt = booking.CreatedAt
+            };
+        }
+
+        public async Task<bool> CancelAsync(Guid bookingId, Guid customerId)
+        {
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null || booking.CustomerId != customerId)
+                return false;
+
+            if (booking.Status == BookingStatus.Completed)
+                return false;
+
+            return await _bookingRepository.UpdateStatusAsync(bookingId, BookingStatus.Cancelled);
+        }
+
+        public async Task<bool> UpdateStatusAsync(Guid bookingId, string status, Guid shopOwnerId)
+        {
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null)
+                return false;
+
+            var parsedStatus = Enum.Parse<BookingStatus>(status, true);
+            return await _bookingRepository.UpdateStatusAsync(bookingId, parsedStatus);
         }
     }
 }

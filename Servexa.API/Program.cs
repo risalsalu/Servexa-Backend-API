@@ -9,7 +9,6 @@ using Servexa.Application.Interfaces.Favorites;
 using Servexa.Application.Services;
 using Servexa.Application.Services.Favorites;
 using Servexa.Infrastructure.Repositories;
-using Servexa.Infrastructure.Repositories.Generic;
 using Servexa.Infrastructure.Services;
 using Servexa.Infrastructure.Settings;
 using System.Text;
@@ -81,9 +80,8 @@ builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ISlotRepository, SlotRepository>();
-builder.Services.AddScoped<ISlotRepository, SlotRepository>();
-
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
@@ -95,21 +93,25 @@ builder.Services.AddScoped<IUserShopService, UserShopService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 
+builder.Services.Configure<RazorpaySettings>(
+    builder.Configuration.GetSection("RazorpaySettings"));
 
-
-
-
-var cloudinarySettings = new CloudinarySettings();
-builder.Configuration.GetSection("CloudinarySettings").Bind(cloudinarySettings);
+builder.Services.Configure<CloudinarySettings>(
+    builder.Configuration.GetSection("CloudinarySettings"));
 
 builder.Services.AddSingleton(provider =>
 {
+    var settings = provider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<CloudinarySettings>>()
+        .Value;
+
     var account = new Account(
-        cloudinarySettings.CloudName,
-        cloudinarySettings.ApiKey,
-        cloudinarySettings.ApiSecret
+        settings.CloudName,
+        settings.ApiKey,
+        settings.ApiSecret
     );
 
     var cloudinary = new Cloudinary(account);
@@ -145,11 +147,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = context =>
             {
-                var path = context.HttpContext.Request.Path;
-
-                if (path.StartsWithSegments("/swagger"))
-                    return Task.CompletedTask;
-
                 if (context.Request.Headers.ContainsKey("Authorization"))
                     return Task.CompletedTask;
 

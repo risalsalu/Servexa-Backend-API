@@ -7,7 +7,19 @@ namespace Servexa.Application.Interfaces
 {
     public interface IBookingService
     {
-        Task<BookingResponseDto> CreateAsync(CreateBookingDto dto, Guid customerId);
+        Task<BookingResponseDto> CreateBookingAfterPaymentAsync(
+            Guid customerId,
+            CreateBookingAfterPaymentDto dto
+        );
+
         Task<IEnumerable<BookingDetailDto>> GetByCustomerAsync(Guid customerId);
+
+        Task<IEnumerable<BookingDetailDto>> GetByShopAsync(Guid shopOwnerId);
+
+        Task<BookingDetailDto> GetByIdAsync(Guid bookingId);
+
+        Task<bool> CancelAsync(Guid bookingId, Guid customerId);
+
+        Task<bool> UpdateStatusAsync(Guid bookingId, string status, Guid shopOwnerId);
     }
 }
