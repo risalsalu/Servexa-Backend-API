@@ -1,6 +1,5 @@
 ﻿using Servexa.Application.DTOs.Services;
 using Servexa.Application.Interfaces;
-using Servexa.Shared.Responses;
 using DomainShopService = Servexa.Domain.Models.ShopService;
 using System;
 using System.Linq;
@@ -18,7 +17,7 @@ namespace Servexa.Infrastructure.Services
             _repo = repo;
         }
 
-        public async Task<ApiResponse<ShopServiceResponseDto>> AddServiceAsync(Guid shopId, AddShopServiceDto dto)
+        public async Task<ShopServiceResponseDto> AddServiceAsync(Guid shopId, AddShopServiceDto dto)
         {
             var entity = new DomainShopService
             {
@@ -37,7 +36,7 @@ namespace Servexa.Infrastructure.Services
 
             await _repo.AddAsync(entity);
 
-            var response = new ShopServiceResponseDto
+            return new ShopServiceResponseDto
             {
                 Id = entity.Id,
                 ShopId = entity.ShopId,
@@ -50,15 +49,13 @@ namespace Servexa.Infrastructure.Services
                 CreatedAtUtc = entity.CreatedOn,
                 UpdatedAtUtc = entity.ModifiedOn
             };
-
-            return ApiResponse<ShopServiceResponseDto>.SuccessResponse(response);
         }
 
-        public async Task<ApiResponse<ShopServiceResponseDto>> UpdateServiceAsync(Guid shopId, Guid serviceId, UpdateShopServiceDto dto)
+        public async Task<ShopServiceResponseDto> UpdateServiceAsync(Guid shopId, Guid serviceId, UpdateShopServiceDto dto)
         {
             var entity = await _repo.GetByIdAsync(serviceId);
             if (entity == null || entity.ShopId != shopId)
-                return ApiResponse<ShopServiceResponseDto>.ErrorResponse("Not found");
+                throw new Exception("Not found");
 
             entity.CategoryId = dto.CategoryId;
             entity.Name = dto.Name;
@@ -70,7 +67,7 @@ namespace Servexa.Infrastructure.Services
 
             await _repo.UpdateAsync(entity);
 
-            var response = new ShopServiceResponseDto
+            return new ShopServiceResponseDto
             {
                 Id = entity.Id,
                 ShopId = entity.ShopId,
@@ -83,15 +80,13 @@ namespace Servexa.Infrastructure.Services
                 CreatedAtUtc = entity.CreatedOn,
                 UpdatedAtUtc = entity.ModifiedOn
             };
-
-            return ApiResponse<ShopServiceResponseDto>.SuccessResponse(response);
         }
 
-        public async Task<ApiResponse<bool>> DeleteServiceAsync(Guid shopId, Guid serviceId, Guid deletedBy)
+        public async Task<bool> DeleteServiceAsync(Guid shopId, Guid serviceId, Guid deletedBy)
         {
             var entity = await _repo.GetByIdAsync(serviceId);
             if (entity == null || entity.ShopId != shopId)
-                return ApiResponse<bool>.ErrorResponse("Not found");
+                throw new Exception("Not found");
 
             entity.IsDeleted = true;
             entity.DeletedBy = deletedBy;
@@ -99,15 +94,14 @@ namespace Servexa.Infrastructure.Services
             entity.ModifiedOn = DateTime.UtcNow;
 
             await _repo.UpdateAsync(entity);
-
-            return ApiResponse<bool>.SuccessResponse(true);
+            return true;
         }
 
-        public async Task<ApiResponse<IEnumerable<ShopServiceResponseDto>>> GetServicesForOwnerAsync(Guid shopId)
+        public async Task<IEnumerable<ShopServiceResponseDto>> GetServicesForOwnerAsync(Guid shopId)
         {
             var items = await _repo.GetByShopAsync(shopId);
 
-            var list = items.Select(s => new ShopServiceResponseDto
+            return items.Select(s => new ShopServiceResponseDto
             {
                 Id = s.Id,
                 ShopId = s.ShopId,
@@ -120,15 +114,13 @@ namespace Servexa.Infrastructure.Services
                 CreatedAtUtc = s.CreatedOn,
                 UpdatedAtUtc = s.ModifiedOn
             });
-
-            return ApiResponse<IEnumerable<ShopServiceResponseDto>>.SuccessResponse(list);
         }
 
-        public async Task<ApiResponse<IEnumerable<ShopServiceListItemDto>>> GetServicesForUserAsync(Guid shopId)
+        public async Task<IEnumerable<ShopServiceListItemDto>> GetServicesForUserAsync(Guid shopId)
         {
             var items = await _repo.GetActiveByShopAsync(shopId);
 
-            var list = items.Select(s => new ShopServiceListItemDto
+            return items.Select(s => new ShopServiceListItemDto
             {
                 Id = s.Id,
                 CategoryId = s.CategoryId,
@@ -137,8 +129,6 @@ namespace Servexa.Infrastructure.Services
                 Price = s.Price,
                 DurationMinutes = s.DurationMinutes
             });
-
-            return ApiResponse<IEnumerable<ShopServiceListItemDto>>.SuccessResponse(list);
         }
     }
 }

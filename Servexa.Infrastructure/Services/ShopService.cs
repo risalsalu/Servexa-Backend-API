@@ -2,7 +2,6 @@
 using Servexa.Application.DTOs.Shop;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
-using Servexa.Shared.Responses;
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -27,16 +26,15 @@ namespace Servexa.Infrastructure.Services
             _cloudinary = cloudinary;
         }
 
-        public async Task<ApiResponse<Guid>> RegisterShopAsync(
+        public async Task<Guid> RegisterShopAsync(
             Guid ownerId,
             ShopUpsertRequest request,
             IFormFile? shopImage,
             IFormFile? licenseImage,
             IFormFile? idProofImage)
         {
-            var exists = await _shopRepository.OwnerHasShopAsync(ownerId);
-            if (exists)
-                return ApiResponse<Guid>.ErrorResponse("Shop already exists.");
+            if (await _shopRepository.OwnerHasShopAsync(ownerId))
+                throw new Exception("Shop already exists");
 
             var shop = new Shop
             {
@@ -92,18 +90,18 @@ namespace Servexa.Infrastructure.Services
                 });
             }
 
-            return ApiResponse<Guid>.SuccessResponse(shopId);
+            return shopId;
         }
 
-        public async Task<ApiResponse<ShopResponseDto>> GetShopAsync(Guid ownerId)
+        public async Task<ShopResponseDto> GetShopAsync(Guid ownerId)
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
-                return ApiResponse<ShopResponseDto>.ErrorResponse("Shop not found.");
+                throw new Exception("Shop not found");
 
             var images = await _shopImageRepository.GetByShopIdAsync(shop.Id);
 
-            var dto = new ShopResponseDto
+            return new ShopResponseDto
             {
                 ShopId = shop.Id,
                 OwnerId = shop.OwnerId,
@@ -126,11 +124,9 @@ namespace Servexa.Infrastructure.Services
                     ImageTypeName = i.ImageType.ToString()
                 }).ToList()
             };
-
-            return ApiResponse<ShopResponseDto>.SuccessResponse(dto);
         }
 
-        public async Task<ApiResponse<bool>> UpdateShopAsync(
+        public async Task<bool> UpdateShopAsync(
             Guid ownerId,
             ShopUpsertRequest request,
             IFormFile? shopImage,
@@ -139,7 +135,7 @@ namespace Servexa.Infrastructure.Services
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
-                return ApiResponse<bool>.ErrorResponse("Shop not found.");
+                throw new Exception("Shop not found");
 
             shop.ShopName = request.ShopName;
             shop.CategoryId = request.CategoryId;
@@ -182,36 +178,34 @@ namespace Servexa.Infrastructure.Services
             }
 
             await _shopRepository.UpdateAsync(shop);
-
-            return ApiResponse<bool>.SuccessResponse(true);
+            return true;
         }
 
-        public async Task<ApiResponse<bool>> SetActiveStatusAsync(Guid ownerId, ActivateShopDto dto)
+        public async Task<bool> SetActiveStatusAsync(Guid ownerId, ActivateShopDto dto)
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
-                return ApiResponse<bool>.ErrorResponse("Shop not found.");
+                throw new Exception("Shop not found");
 
             if (!dto.IsActive && string.IsNullOrWhiteSpace(dto.OfflineReason))
-                return ApiResponse<bool>.ErrorResponse("Offline reason is required.");
+                throw new Exception("Offline reason is required");
 
             await _shopRepository.SetActiveStatusAsync(
                 ownerId,
                 dto.IsActive,
-                dto.IsActive ? null : dto.OfflineReason
-            );
+                dto.IsActive ? null : dto.OfflineReason);
 
-            return ApiResponse<bool>.SuccessResponse(true);
+            return true;
         }
 
-        public async Task<ApiResponse<AddShopImageDto>> AddShopImageAsync(
+        public async Task<AddShopImageDto> AddShopImageAsync(
             Guid ownerId,
             IFormFile file,
             ShopImageType imageType)
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
-                return ApiResponse<AddShopImageDto>.ErrorResponse("Shop not found.");
+                throw new Exception("Shop not found");
 
             var (url, publicId) = await _cloudinary.UploadAsync(file);
 
@@ -223,35 +217,34 @@ namespace Servexa.Infrastructure.Services
                 ImageType = imageType
             });
 
-            return ApiResponse<AddShopImageDto>.SuccessResponse(new AddShopImageDto
+            return new AddShopImageDto
             {
                 ShopId = shop.Id,
                 ImageBase64 = string.Empty,
                 ImageType = (int)image.ImageType
-            });
+            };
         }
 
-        public async Task<ApiResponse<bool>> DeleteShopImageAsync(Guid ownerId, Guid imageId)
+        public async Task<bool> DeleteShopImageAsync(Guid ownerId, Guid imageId)
         {
             var shop = await _shopRepository.GetByOwnerIdAsync(ownerId);
             if (shop == null)
-                return ApiResponse<bool>.ErrorResponse("Shop not found.");
+                throw new Exception("Shop not found");
 
             var image = await _shopImageRepository.GetByIdAsync(imageId);
             if (image == null || image.ShopId != shop.Id)
-                return ApiResponse<bool>.ErrorResponse("Image not found.");
+                throw new Exception("Image not found");
 
             await _cloudinary.DeleteAsync(image.PublicId);
             await _shopImageRepository.DeleteAsync(imageId);
-
-            return ApiResponse<bool>.SuccessResponse(true);
+            return true;
         }
 
-        public async Task<ApiResponse<IEnumerable<ShopResponseDto>>> GetAllActiveShopsAsync()
+        public async Task<IEnumerable<ShopResponseDto>> GetAllActiveShopsAsync()
         {
             var shops = await _shopRepository.GetActiveShopsAsync();
 
-            var result = shops.Select(s => new ShopResponseDto
+            return shops.Select(s => new ShopResponseDto
             {
                 ShopId = s.Id,
                 OwnerId = s.OwnerId,
@@ -267,8 +260,6 @@ namespace Servexa.Infrastructure.Services
                 IsActive = s.IsActive,
                 OfflineReason = s.OfflineReason
             });
-
-            return ApiResponse<IEnumerable<ShopResponseDto>>.SuccessResponse(result);
         }
     }
 }

@@ -46,6 +46,18 @@ WHERE RazorpayOrderId = @razorpayOrderId AND IsDeleted = 0";
             return await conn.QueryFirstOrDefaultAsync<Payment>(sql, new { razorpayOrderId });
         }
 
+        public async Task<Payment?> GetLatestByBookingIdAsync(Guid bookingId)
+        {
+            const string sql = @"
+SELECT TOP 1 *
+FROM Payments
+WHERE BookingId = @bookingId AND IsDeleted = 0
+ORDER BY CreatedOn DESC";
+
+            using var conn = Conn();
+            return await conn.QueryFirstOrDefaultAsync<Payment>(sql, new { bookingId });
+        }
+
         public async Task<bool> UpdateAsync(Payment payment)
         {
             payment.ModifiedOn = DateTime.UtcNow;

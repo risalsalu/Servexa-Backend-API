@@ -14,21 +14,28 @@ namespace Servexa.Infrastructure.Services
         private readonly ISlotRepository _slotRepository;
         private readonly ICustomerAddressRepository _addressRepository;
         private readonly IShopServiceRepository _shopServiceRepository;
+        private readonly IShopRepository _shopRepository;
 
         public BookingService(
             IBookingRepository bookingRepository,
             ISlotRepository slotRepository,
             ICustomerAddressRepository addressRepository,
-            IShopServiceRepository shopServiceRepository)
+            IShopServiceRepository shopServiceRepository,
+            IShopRepository shopRepository)
         {
             _bookingRepository = bookingRepository;
             _slotRepository = slotRepository;
             _addressRepository = addressRepository;
             _shopServiceRepository = shopServiceRepository;
+            _shopRepository = shopRepository;
         }
 
         public async Task<BookingResponseDto> CreateDraftAsync(Guid customerId, CreateBookingDto dto)
         {
+            var shopActive = await _shopRepository.IsShopActiveAsync(dto.ShopId);
+            if (!shopActive)
+                throw new Exception("This shop is currently offline and cannot accept bookings");
+
             var existingDraft = (await _bookingRepository.GetByCustomerAsync(customerId))
                 .Any(b => b.ShopId == dto.ShopId && b.Status == BookingStatus.Draft);
 
@@ -80,7 +87,7 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             if (booking.ServiceMode != ServiceMode.Home)
-                return false;
+                throw new Exception("This booking is not a home service");
 
             if (booking.AddressId != null)
                 return false;
@@ -90,6 +97,8 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.AddressId = addressId;
+            booking.SlotId = null;
+
             return await _bookingRepository.UpdateAsync(booking);
         }
 
@@ -103,7 +112,7 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             if (booking.ServiceMode != ServiceMode.Onsite)
-                return false;
+                throw new Exception("This booking is not an onsite service");
 
             if (booking.SlotId != null)
                 return false;
@@ -117,6 +126,8 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.SlotId = slotId;
+            booking.AddressId = null;
+
             return await _bookingRepository.UpdateAsync(booking);
         }
 
@@ -215,7 +226,8 @@ namespace Servexa.Infrastructure.Services
             if (booking == null || booking.CustomerId != customerId)
                 return false;
 
-            if (booking.Status != BookingStatus.Draft && booking.Status != BookingStatus.PendingPayment)
+            if (booking.Status != BookingStatus.Draft &&
+                booking.Status != BookingStatus.PendingPayment)
                 return false;
 
             booking.Status = BookingStatus.Cancelled;

@@ -27,40 +27,28 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _service.GetAllAsync();
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
-            return Success(result.Data, result.Message);
+            return Success(result, "Categories fetched successfully");
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateCategoryDto dto)
         {
             var result = await _service.CreateAsync(dto, AdminId());
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
-            return Created(result.Data, result.Message);
+            return Created(result, "Category created successfully");
         }
 
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryDto dto)
         {
             var result = await _service.UpdateAsync(id, dto, AdminId());
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
-            return Success(result.Data, result.Message);
+            return Success(result, "Category updated successfully");
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var result = await _service.DeleteAsync(id, AdminId());
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
-            return Success(result.Data, result.Message);
+            return Success(result, "Category deleted successfully");
         }
     }
 }

@@ -117,5 +117,18 @@ WHERE Id = @Id AND IsDeleted = 0";
             using var conn = Conn();
             return await conn.ExecuteAsync(sql, booking) > 0;
         }
+
+        public async Task<bool> HasActiveBookingsAsync(Guid customerId)
+        {
+            const string sql = @"
+SELECT COUNT(1)
+FROM Bookings
+WHERE CustomerId = @customerId
+  AND IsDeleted = 0
+  AND Status IN (1, 2, 3)";
+
+            using var conn = Conn();
+            return await conn.ExecuteScalarAsync<int>(sql, new { customerId }) > 0;
+        }
     }
 }

@@ -28,6 +28,14 @@ namespace Servexa.API.Controllers
             return Success(result, "Payment order created");
         }
 
+        [HttpPost("retry")]
+        public async Task<IActionResult> Retry([FromBody] CreatePaymentOrderDto dto)
+        {
+            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _paymentService.RetryPaymentAsync(dto.BookingId, customerId);
+            return Success(result, "Payment retry order created");
+        }
+
         [HttpPost("verify")]
         public async Task<IActionResult> Verify([FromBody] VerifyPaymentDto dto)
         {

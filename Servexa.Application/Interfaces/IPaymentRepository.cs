@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Servexa.Domain.Models;
 
 namespace Servexa.Application.Interfaces
@@ -7,6 +8,7 @@ namespace Servexa.Application.Interfaces
     {
         Task CreateAsync(Payment payment);
         Task<Payment?> GetByOrderIdAsync(string razorpayOrderId);
+        Task<Payment?> GetLatestByBookingIdAsync(Guid bookingId);
         Task<bool> UpdateAsync(Payment payment);
     }
 }

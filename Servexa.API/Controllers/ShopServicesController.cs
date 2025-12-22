@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Servexa.Application.DTOs.Services;
 using Servexa.Application.Interfaces;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using System;
 
 namespace Servexa.API.Controllers
 {
@@ -29,8 +31,8 @@ namespace Servexa.API.Controllers
 
         private async Task<Guid?> GetOwnerShopIdAsync()
         {
-            var result = await _shopService.GetShopAsync(GetUserId());
-            return result.Success ? result.Data?.ShopId : null;
+            var shop = await _shopService.GetShopAsync(GetUserId());
+            return shop.ShopId;
         }
 
         [HttpPost]
@@ -41,10 +43,7 @@ namespace Servexa.API.Controllers
                 return NotFoundError("Shop not found");
 
             var result = await _service.AddServiceAsync(shopId.Value, dto);
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
-            return Created(result.Data, "Service added successfully");
+            return Created(result, "Service added successfully");
         }
 
         [HttpPut("{serviceId:guid}")]
@@ -55,10 +54,7 @@ namespace Servexa.API.Controllers
                 return NotFoundError("Shop not found");
 
             var result = await _service.UpdateServiceAsync(shopId.Value, serviceId, dto);
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
-            return Success(result.Data, "Service updated successfully");
+            return Success(result, "Service updated successfully");
         }
 
         [HttpDelete("{serviceId:guid}")]
@@ -68,10 +64,7 @@ namespace Servexa.API.Controllers
             if (shopId == null)
                 return NotFoundError("Shop not found");
 
-            var result = await _service.DeleteServiceAsync(shopId.Value, serviceId, shopId.Value);
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
+            await _service.DeleteServiceAsync(shopId.Value, serviceId, shopId.Value);
             return SuccessMessage("Service deleted successfully");
         }
 
@@ -83,10 +76,7 @@ namespace Servexa.API.Controllers
                 return NotFoundError("Shop not found");
 
             var result = await _service.GetServicesForOwnerAsync(shopId.Value);
-            if (!result.Success)
-                return BadRequestError(result.Message);
-
-            return Success(result.Data, "Services fetched successfully");
+            return Success(result, "Services fetched successfully");
         }
     }
 }

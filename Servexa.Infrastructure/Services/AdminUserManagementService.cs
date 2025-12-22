@@ -1,6 +1,5 @@
 ﻿using Servexa.Application.DTOs.Admin;
 using Servexa.Application.Interfaces;
-using Servexa.Shared.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,18 +9,22 @@ namespace Servexa.Infrastructure.Services
 {
     public class AdminUserManagementService : IAdminUserManagementService
     {
-        private readonly IUserRepository _repo;
+        private readonly IUserRepository _userRepository;
+        private readonly IBookingRepository _bookingRepository;
 
-        public AdminUserManagementService(IUserRepository repo)
+        public AdminUserManagementService(
+            IUserRepository userRepository,
+            IBookingRepository bookingRepository)
         {
-            _repo = repo;
+            _userRepository = userRepository;
+            _bookingRepository = bookingRepository;
         }
 
-        public async Task<ApiResponse<IEnumerable<AdminUserListDto>>> GetAllUsersAsync()
+        public async Task<IEnumerable<AdminUserListDto>> GetAllUsersAsync()
         {
-            var users = await _repo.GetAllUsersAsync();
+            var users = await _userRepository.GetAllUsersAsync();
 
-            var dto = users
+            return users
                 .Where(u => u.Role == "Customer")
                 .Select(u => new AdminUserListDto
                 {
@@ -31,15 +34,13 @@ namespace Servexa.Infrastructure.Services
                     Phone = u.Phone,
                     IsActive = u.IsActive
                 });
-
-            return ApiResponse<IEnumerable<AdminUserListDto>>.SuccessResponse(dto, "Customers fetched successfully");
         }
 
-        public async Task<ApiResponse<IEnumerable<AdminShopOwnerListDto>>> GetAllShopOwnersAsync()
+        public async Task<IEnumerable<AdminShopOwnerListDto>> GetAllShopOwnersAsync()
         {
-            var owners = await _repo.GetAllShopOwnersWithShopStatusAsync();
+            var owners = await _userRepository.GetAllShopOwnersWithShopStatusAsync();
 
-            var dto = owners.Select(o => new AdminShopOwnerListDto
+            return owners.Select(o => new AdminShopOwnerListDto
             {
                 Id = o.Id,
                 FullName = o.FullName,
@@ -51,49 +52,54 @@ namespace Servexa.Infrastructure.Services
                 ShopIsActive = o.ShopIsActive,
                 ShopOfflineReason = o.ShopOfflineReason
             });
-
-            return ApiResponse<IEnumerable<AdminShopOwnerListDto>>.SuccessResponse(dto, "Shop owners fetched successfully");
         }
 
-        public async Task<ApiResponse<bool>> SetUserActiveStatusAsync(Guid id, bool isActive)
+        public async Task<bool> SetUserActiveStatusAsync(Guid id, bool isActive)
         {
-            var user = await _repo.GetByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
-                return ApiResponse<bool>.ErrorResponse("User not found");
+                throw new Exception("User not found");
 
             if (user.Role != "Customer")
-                return ApiResponse<bool>.ErrorResponse("The user is not a customer");
+                throw new Exception("The user is not a customer");
 
-            var updated = await _repo.SetActiveStatusAsync(id, isActive);
+            if (!isActive)
+            {
+                var hasActiveBookings = await _bookingRepository.HasActiveBookingsAsync(id);
+                if (hasActiveBookings)
+                    throw new Exception("Customer has active bookings and cannot be blocked");
+            }
+
+            var updated = await _userRepository.SetActiveStatusAsync(id, isActive);
             if (!updated)
-                return ApiResponse<bool>.ErrorResponse("Failed to update customer status");
+                throw new Exception("Failed to update customer status");
 
-            return ApiResponse<bool>.SuccessResponse(true, "Customer status updated");
+            return true;
         }
 
-        public async Task<ApiResponse<bool>> SetShopOwnerActiveStatusAsync(Guid id, bool isActive)
+        public async Task<bool> SetShopOwnerActiveStatusAsync(Guid id, bool isActive)
         {
-            var user = await _repo.GetByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
-                return ApiResponse<bool>.ErrorResponse("User not found");
+                throw new Exception("User not found");
 
             if (user.Role != "ShopOwner")
-                return ApiResponse<bool>.ErrorResponse("The user is not a shop owner");
+                throw new Exception("The user is not a shop owner");
 
-            var updated = await _repo.SetActiveStatusAsync(id, isActive);
+            var updated = await _userRepository.SetActiveStatusAsync(id, isActive);
             if (!updated)
-                return ApiResponse<bool>.ErrorResponse("Failed to update shop owner status");
+                throw new Exception("Failed to update shop owner status");
 
-            return ApiResponse<bool>.SuccessResponse(true, "Shop owner status updated");
+            return true;
         }
 
-        public async Task<ApiResponse<bool>> DeleteUserAsync(Guid id, Guid adminId)
+        public async Task<bool> DeleteUserAsync(Guid id, Guid adminId)
         {
-            var deleted = await _repo.SoftDeleteAsync(id, adminId);
+            var deleted = await _userRepository.SoftDeleteAsync(id, adminId);
             if (!deleted)
-                return ApiResponse<bool>.ErrorResponse("Failed to delete user");
+                throw new Exception("Failed to delete user");
 
-            return ApiResponse<bool>.SuccessResponse(true, "User deleted successfully");
+            return true;
         }
     }
 }

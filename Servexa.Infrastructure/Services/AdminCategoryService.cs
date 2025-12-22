@@ -1,7 +1,10 @@
 ﻿using Servexa.Application.DTOs.Admin;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
-using Servexa.Shared.Responses;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Servexa.Infrastructure.Services
 {
@@ -14,26 +17,24 @@ namespace Servexa.Infrastructure.Services
             _repo = repo;
         }
 
-        public async Task<ApiResponse<IEnumerable<CategoryResponseDto>>> GetAllAsync()
+        public async Task<IEnumerable<CategoryResponseDto>> GetAllAsync()
         {
             var list = await _repo.GetAllAsync();
 
-            var data = list.Select(x => new CategoryResponseDto
+            return list.Select(x => new CategoryResponseDto
             {
                 Id = x.Id,
                 Name = x.Name
             });
-
-            return ApiResponse<IEnumerable<CategoryResponseDto>>.SuccessResponse(data, "Categories fetched successfully");
         }
 
-        public async Task<ApiResponse<CategoryResponseDto>> CreateAsync(CreateCategoryDto dto, Guid adminId)
+        public async Task<CategoryResponseDto> CreateAsync(CreateCategoryDto dto, Guid adminId)
         {
             if (string.IsNullOrWhiteSpace(dto.Name))
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Name is required");
+                throw new Exception("Name is required");
 
             if (await _repo.ExistsByNameAsync(dto.Name))
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
+                throw new Exception("Category name already exists");
 
             var entity = new Category
             {
@@ -44,69 +45,47 @@ namespace Servexa.Infrastructure.Services
                 IsDeleted = false
             };
 
-            try
-            {
-                await _repo.AddAsync(entity);
-            }
-            catch
-            {
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
-            }
+            await _repo.AddAsync(entity);
 
-            return ApiResponse<CategoryResponseDto>.SuccessResponse(
-                new CategoryResponseDto
-                {
-                    Id = entity.Id,
-                    Name = entity.Name
-                },
-                "Category created successfully"
-            );
+            return new CategoryResponseDto
+            {
+                Id = entity.Id,
+                Name = entity.Name
+            };
         }
 
-        public async Task<ApiResponse<CategoryResponseDto>> UpdateAsync(Guid id, UpdateCategoryDto dto, Guid adminId)
+        public async Task<CategoryResponseDto> UpdateAsync(Guid id, UpdateCategoryDto dto, Guid adminId)
         {
             var existing = await _repo.GetByIdAsync(id);
             if (existing == null)
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category not found");
+                throw new Exception("Category not found");
 
             if (string.IsNullOrWhiteSpace(dto.Name))
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Name is required");
+                throw new Exception("Name is required");
 
             if (await _repo.ExistsByNameExceptIdAsync(id, dto.Name))
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
+                throw new Exception("Category name already exists");
 
             existing.Name = dto.Name;
             existing.ModifiedBy = adminId;
             existing.ModifiedOn = DateTime.UtcNow;
 
-            try
-            {
-                await _repo.UpdateAsync(existing);
-            }
-            catch
-            {
-                return ApiResponse<CategoryResponseDto>.ErrorResponse("Category name already exists");
-            }
+            await _repo.UpdateAsync(existing);
 
-            return ApiResponse<CategoryResponseDto>.SuccessResponse(
-                new CategoryResponseDto
-                {
-                    Id = existing.Id,
-                    Name = existing.Name
-                },
-                "Category updated successfully"
-            );
+            return new CategoryResponseDto
+            {
+                Id = existing.Id,
+                Name = existing.Name
+            };
         }
 
-        public async Task<ApiResponse<bool>> DeleteAsync(Guid id, Guid adminId)
+        public async Task<bool> DeleteAsync(Guid id, Guid adminId)
         {
             var existing = await _repo.GetByIdAsync(id);
             if (existing == null)
-                return ApiResponse<bool>.ErrorResponse("Category not found");
+                throw new Exception("Category not found");
 
-            var deleted = await _repo.DeleteSoftAsync(id, adminId);
-
-            return ApiResponse<bool>.SuccessResponse(deleted, "Category deleted successfully");
+            return await _repo.DeleteSoftAsync(id, adminId);
         }
     }
 }

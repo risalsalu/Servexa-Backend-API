@@ -34,8 +34,32 @@ namespace Servexa.Infrastructure.Services
                 throw new Exception("Invalid booking");
 
             if (booking.Status != BookingStatus.Draft)
-                throw new Exception("Booking not ready for payment");
+                throw new Exception("Booking not eligible for payment");
 
+            return await CreateNewPaymentAsync(booking, customerId);
+        }
+
+        public async Task<PaymentResponseDto> RetryPaymentAsync(Guid bookingId, Guid customerId)
+        {
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null || booking.CustomerId != customerId)
+                throw new Exception("Invalid booking");
+
+            if (booking.Status != BookingStatus.PaymentFailed)
+                throw new Exception("Retry not allowed");
+
+            var lastPayment = await _paymentRepository.GetLatestByBookingIdAsync(bookingId);
+            if (lastPayment != null && lastPayment.Status == PaymentStatus.Created)
+            {
+                lastPayment.Status = PaymentStatus.Failed;
+                await _paymentRepository.UpdateAsync(lastPayment);
+            }
+
+            return await CreateNewPaymentAsync(booking, customerId);
+        }
+
+        private async Task<PaymentResponseDto> CreateNewPaymentAsync(Booking booking, Guid customerId)
+        {
             var client = new RazorpayClient(_settings.KeyId, _settings.KeySecret);
 
             var order = client.Order.Create(new System.Collections.Generic.Dictionary<string, object>
@@ -81,9 +105,10 @@ namespace Servexa.Infrastructure.Services
 
             var payload = $"{dto.RazorpayOrderId}|{dto.RazorpayPaymentId}";
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_settings.KeySecret));
-            var computed = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(payload)));
+            var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+            var signature = BitConverter.ToString(hash).Replace("-", "").ToLower();
 
-            if (computed != dto.RazorpaySignature)
+            if (signature != dto.RazorpaySignature)
                 throw new Exception("Invalid signature");
 
             payment.RazorpayPaymentId = dto.RazorpayPaymentId;

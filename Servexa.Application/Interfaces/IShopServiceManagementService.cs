@@ -1,14 +1,16 @@
 ﻿using Servexa.Application.DTOs.Services;
-using Servexa.Shared.Responses;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Servexa.Application.Interfaces
 {
     public interface IShopServiceManagementService
     {
-        Task<ApiResponse<ShopServiceResponseDto>> AddServiceAsync(Guid shopId, AddShopServiceDto dto);
-        Task<ApiResponse<ShopServiceResponseDto>> UpdateServiceAsync(Guid shopId, Guid serviceId, UpdateShopServiceDto dto);
-        Task<ApiResponse<bool>> DeleteServiceAsync(Guid shopId, Guid serviceId, Guid deletedBy);
-        Task<ApiResponse<IEnumerable<ShopServiceResponseDto>>> GetServicesForOwnerAsync(Guid shopId);
-        Task<ApiResponse<IEnumerable<ShopServiceListItemDto>>> GetServicesForUserAsync(Guid shopId);
+        Task<ShopServiceResponseDto> AddServiceAsync(Guid shopId, AddShopServiceDto dto);
+        Task<ShopServiceResponseDto> UpdateServiceAsync(Guid shopId, Guid serviceId, UpdateShopServiceDto dto);
+        Task<bool> DeleteServiceAsync(Guid shopId, Guid serviceId, Guid deletedBy);
+        Task<IEnumerable<ShopServiceResponseDto>> GetServicesForOwnerAsync(Guid shopId);
+        Task<IEnumerable<ShopServiceListItemDto>> GetServicesForUserAsync(Guid shopId);
     }
 }

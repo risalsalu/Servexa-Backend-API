@@ -110,5 +110,16 @@ WHERE OwnerId = @ownerId AND IsDeleted = 0";
             using var db = Conn();
             return await db.QueryAsync<Shop>(sql);
         }
+
+        public async Task<bool> IsShopActiveAsync(Guid shopId)
+        {
+            const string sql = @"
+SELECT IsActive
+FROM Shops
+WHERE Id = @shopId AND IsDeleted = 0";
+
+            using var db = Conn();
+            return await db.ExecuteScalarAsync<bool>(sql, new { shopId });
+        }
     }
 }

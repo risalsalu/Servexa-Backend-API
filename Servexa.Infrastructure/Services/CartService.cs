@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Servexa.Application.DTOs.Cart;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
-using Servexa.Shared.Responses;
 
 namespace Servexa.Infrastructure.Services
 {
@@ -15,18 +14,21 @@ namespace Servexa.Infrastructure.Services
         private readonly ICartItemRepository _cartItemRepository;
         private readonly IShopServiceRepository _shopServiceRepository;
 
-        public CartService(ICartRepository cartRepository, ICartItemRepository cartItemRepository, IShopServiceRepository shopServiceRepository)
+        public CartService(
+            ICartRepository cartRepository,
+            ICartItemRepository cartItemRepository,
+            IShopServiceRepository shopServiceRepository)
         {
             _cartRepository = cartRepository;
             _cartItemRepository = cartItemRepository;
             _shopServiceRepository = shopServiceRepository;
         }
 
-        public async Task<ApiResponse<CartResponseDto>> AddToCartAsync(Guid userId, AddToCartDto dto)
+        public async Task<CartResponseDto?> AddToCartAsync(Guid userId, AddToCartDto dto)
         {
             var shopService = await _shopServiceRepository.GetByIdAsync(dto.ShopServiceId);
             if (shopService == null || shopService.ShopId != dto.ShopId)
-                return ApiResponse<CartResponseDto>.ErrorResponse("Invalid shop or service.");
+                throw new Exception("Invalid shop or service");
 
             var cart = await _cartRepository.GetActiveCartForUserAndShopAsync(userId, dto.ShopId);
             if (cart == null)
@@ -39,7 +41,11 @@ namespace Servexa.Infrastructure.Services
                 await _cartRepository.AddAsync(cart);
             }
 
-            var existingItem = await _cartItemRepository.GetByCartAndServiceAsync(cart.Id, dto.ShopServiceId, dto.SelectedDateTime);
+            var existingItem = await _cartItemRepository.GetByCartAndServiceAsync(
+                cart.Id,
+                dto.ShopServiceId,
+                dto.SelectedDateTime);
+
             if (existingItem == null)
             {
                 var newItem = new CartItem
@@ -61,30 +67,28 @@ namespace Servexa.Infrastructure.Services
             }
 
             var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
-            var cartDto = await BuildCartResponseDto(cart, items);
-            return ApiResponse<CartResponseDto>.SuccessResponse(cartDto, "Item added to cart.");
+            return await BuildCartResponseDto(cart, items);
         }
 
-        public async Task<ApiResponse<CartResponseDto>> GetCartForShopAsync(Guid userId, Guid shopId)
+        public async Task<CartResponseDto?> GetCartForShopAsync(Guid userId, Guid shopId)
         {
             var cart = await _cartRepository.GetActiveCartForUserAndShopAsync(userId, shopId);
             if (cart == null)
-                return ApiResponse<CartResponseDto>.SuccessResponse(null, "Cart is empty.");
+                return null;
 
             var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
-            var cartDto = await BuildCartResponseDto(cart, items);
-            return ApiResponse<CartResponseDto>.SuccessResponse(cartDto, "Cart retrieved.");
+            return await BuildCartResponseDto(cart, items);
         }
 
-        public async Task<ApiResponse<CartResponseDto>> UpdateCartItemAsync(Guid userId, Guid cartItemId, UpdateCartItemDto dto)
+        public async Task<CartResponseDto?> UpdateCartItemAsync(Guid userId, Guid cartItemId, UpdateCartItemDto dto)
         {
             var cartItem = await _cartItemRepository.GetByIdAsync(cartItemId);
             if (cartItem == null)
-                return ApiResponse<CartResponseDto>.ErrorResponse("Cart item not found.");
+                throw new Exception("Cart item not found");
 
             var cart = await _cartRepository.GetByIdAsync(cartItem.CartId);
             if (cart == null || cart.UserId != userId)
-                return ApiResponse<CartResponseDto>.ErrorResponse("Cart not found.");
+                throw new Exception("Cart not found");
 
             if (dto.Quantity.HasValue)
                 cartItem.Quantity = dto.Quantity.Value;
@@ -106,22 +110,21 @@ namespace Servexa.Infrastructure.Services
             if (!items.Any())
             {
                 await _cartRepository.DeleteAsync(cart.Id);
-                return ApiResponse<CartResponseDto>.SuccessResponse(null, "Cart is empty.");
+                return null;
             }
 
-            var cartDto = await BuildCartResponseDto(cart, items);
-            return ApiResponse<CartResponseDto>.SuccessResponse(cartDto, "Cart item updated.");
+            return await BuildCartResponseDto(cart, items);
         }
 
-        public async Task<ApiResponse<bool>> RemoveCartItemAsync(Guid userId, Guid cartItemId)
+        public async Task<bool> RemoveCartItemAsync(Guid userId, Guid cartItemId)
         {
             var cartItem = await _cartItemRepository.GetByIdAsync(cartItemId);
             if (cartItem == null)
-                return ApiResponse<bool>.ErrorResponse("Cart item not found.");
+                throw new Exception("Cart item not found");
 
             var cart = await _cartRepository.GetByIdAsync(cartItem.CartId);
             if (cart == null || cart.UserId != userId)
-                return ApiResponse<bool>.ErrorResponse("Cart not found.");
+                throw new Exception("Cart not found");
 
             await _cartItemRepository.DeleteAsync(cartItemId);
 
@@ -129,22 +132,21 @@ namespace Servexa.Infrastructure.Services
             if (!items.Any())
                 await _cartRepository.DeleteAsync(cart.Id);
 
-            return ApiResponse<bool>.SuccessResponse(true, "Cart item removed.");
+            return true;
         }
 
-        public async Task<ApiResponse<bool>> ClearCartAsync(Guid userId, Guid shopId)
+        public async Task<bool> ClearCartAsync(Guid userId, Guid shopId)
         {
             var cart = await _cartRepository.GetActiveCartForUserAndShopAsync(userId, shopId);
             if (cart == null)
-                return ApiResponse<bool>.SuccessResponse(true, "Cart already empty.");
+                return true;
 
             var items = await _cartItemRepository.GetItemsByCartIdAsync(cart.Id);
             foreach (var item in items)
                 await _cartItemRepository.DeleteAsync(item.Id);
 
             await _cartRepository.DeleteAsync(cart.Id);
-
-            return ApiResponse<bool>.SuccessResponse(true, "Cart cleared.");
+            return true;
         }
 
         private async Task<CartResponseDto> BuildCartResponseDto(Cart cart, IEnumerable<CartItem> items)
@@ -156,20 +158,20 @@ namespace Servexa.Infrastructure.Services
             foreach (var item in items)
             {
                 var shopService = await _shopServiceRepository.GetByIdAsync(item.ShopServiceId);
-                var dto = new CartItemResponseDto
+
+                list.Add(new CartItemResponseDto
                 {
                     CartItemId = item.Id,
                     ShopServiceId = item.ShopServiceId,
-                    ServiceName = shopService != null ? shopService.Name : string.Empty,
+                    ServiceName = shopService?.Name ?? string.Empty,
                     Price = item.Price,
                     Quantity = item.Quantity,
                     DurationMinutes = item.DurationMinutes,
                     SelectedDateTime = item.SelectedDateTime
-                };
+                });
 
                 totalPrice += item.Price * item.Quantity;
                 totalDuration += item.DurationMinutes * item.Quantity;
-                list.Add(dto);
             }
 
             return new CartResponseDto
