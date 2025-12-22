@@ -22,14 +22,14 @@ namespace Servexa.Infrastructure.Repositories
         public async Task CreateAsync(Payment payment)
         {
             payment.Id = Guid.NewGuid();
-            payment.CreatedOn = payment.CreatedAt;
+            payment.CreatedOn = DateTime.UtcNow;
             payment.IsDeleted = false;
 
             const string sql = @"
 INSERT INTO Payments
-(Id, UserId, ShopId, Amount, RazorpayOrderId, RazorpayPaymentId, RazorpaySignature, Status, CreatedAt, CreatedOn, IsDeleted)
+(Id, BookingId, UserId, ShopId, Amount, RazorpayOrderId, RazorpayPaymentId, RazorpaySignature, Status, CreatedOn, IsDeleted)
 VALUES
-(@Id, @UserId, @ShopId, @Amount, @RazorpayOrderId, @RazorpayPaymentId, @RazorpaySignature, @Status, @CreatedAt, @CreatedOn, 0)";
+(@Id, @BookingId, @UserId, @ShopId, @Amount, @RazorpayOrderId, @RazorpayPaymentId, @RazorpaySignature, @Status, @CreatedOn, 0)";
 
             using var conn = Conn();
             await conn.ExecuteAsync(sql, payment);
@@ -56,7 +56,7 @@ SET RazorpayPaymentId = @RazorpayPaymentId,
     RazorpaySignature = @RazorpaySignature,
     Status = @Status,
     ModifiedOn = @ModifiedOn
-WHERE Id = @Id";
+WHERE Id = @Id AND IsDeleted = 0";
 
             using var conn = Conn();
             return await conn.ExecuteAsync(sql, payment) > 0;

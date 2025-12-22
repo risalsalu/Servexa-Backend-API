@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Servexa.Domain.Models;
 
 namespace Servexa.Application.DTOs.Booking
@@ -7,7 +8,6 @@ namespace Servexa.Application.DTOs.Booking
     {
         public Guid ShopId { get; set; }
         public ServiceMode ServiceMode { get; set; }
-        public Guid? AddressId { get; set; }
-        public Guid? SlotId { get; set; }
+        public IEnumerable<Guid> ServiceIds { get; set; } = [];
     }
 }

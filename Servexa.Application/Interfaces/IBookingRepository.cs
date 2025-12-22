@@ -9,9 +9,10 @@ namespace Servexa.Application.Interfaces
     {
         Task<Guid> CreateAsync(Booking booking);
         Task AddItemsAsync(IEnumerable<BookingItem> items);
+        Task<IEnumerable<BookingItem>> GetItemsByBookingIdAsync(Guid bookingId);
+        Task<Booking?> GetByIdAsync(Guid bookingId);
         Task<IEnumerable<Booking>> GetByCustomerAsync(Guid customerId);
         Task<IEnumerable<Booking>> GetByShopAsync(Guid shopId);
-        Task<Booking?> GetByIdAsync(Guid bookingId);
-        Task<bool> UpdateStatusAsync(Guid bookingId, BookingStatus status);
+        Task<bool> UpdateAsync(Booking booking);
     }
 }

@@ -24,7 +24,7 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> CreateOrder([FromBody] CreatePaymentOrderDto dto)
         {
             var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _paymentService.CreateOrderAsync(dto, customerId);
+            var result = await _paymentService.CreateOrderAsync(dto.BookingId, customerId);
             return Success(result, "Payment order created");
         }
 
@@ -33,7 +33,7 @@ namespace Servexa.API.Controllers
         {
             var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _paymentService.VerifyPaymentAsync(dto, customerId);
-            return Success(result, "Payment verified and booking created");
+            return Success(result, "Payment verified");
         }
     }
 }

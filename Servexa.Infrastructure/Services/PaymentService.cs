@@ -3,8 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using RazorpayClientAlias = Razorpay.Api.RazorpayClient;
-using Servexa.Application.DTOs.Booking;
+using Razorpay.Api;
 using Servexa.Application.DTOs.Payment;
 using Servexa.Application.Interfaces;
 using Servexa.Domain.Models;
@@ -15,60 +14,70 @@ namespace Servexa.Infrastructure.Services
     public class PaymentService : IPaymentService
     {
         private readonly IPaymentRepository _paymentRepository;
-        private readonly IBookingService _bookingService;
+        private readonly IBookingRepository _bookingRepository;
         private readonly RazorpaySettings _settings;
 
         public PaymentService(
             IPaymentRepository paymentRepository,
-            IBookingService bookingService,
+            IBookingRepository bookingRepository,
             IOptions<RazorpaySettings> options)
         {
             _paymentRepository = paymentRepository;
-            _bookingService = bookingService;
+            _bookingRepository = bookingRepository;
             _settings = options.Value;
         }
 
-        public async Task<PaymentResponseDto> CreateOrderAsync(
-            CreatePaymentOrderDto dto,
-            Guid customerId)
+        public async Task<PaymentResponseDto> CreateOrderAsync(Guid bookingId, Guid customerId)
         {
-            var client = new RazorpayClientAlias(_settings.KeyId, _settings.KeySecret);
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null || booking.CustomerId != customerId)
+                throw new Exception("Invalid booking");
+
+            if (booking.Status != BookingStatus.Draft)
+                throw new Exception("Booking not ready for payment");
+
+            var client = new RazorpayClient(_settings.KeyId, _settings.KeySecret);
 
             var order = client.Order.Create(new System.Collections.Generic.Dictionary<string, object>
             {
-                { "amount", (int)(dto.Amount * 100) },
+                { "amount", (int)(booking.TotalAmount * 100) },
                 { "currency", "INR" },
                 { "receipt", $"SX_{DateTime.UtcNow.Ticks}" }
             });
 
             var payment = new Servexa.Domain.Models.Payment
             {
+                BookingId = booking.Id,
                 UserId = customerId,
-                ShopId = dto.ShopId,
-                Amount = dto.Amount,
+                ShopId = booking.ShopId,
+                Amount = booking.TotalAmount,
                 RazorpayOrderId = order["id"].ToString(),
-                Status = PaymentStatus.Created,
-                CreatedAt = DateTime.UtcNow
+                Status = PaymentStatus.Created
             };
 
             await _paymentRepository.CreateAsync(payment);
+
+            booking.Status = BookingStatus.PendingPayment;
+            await _bookingRepository.UpdateAsync(booking);
 
             return new PaymentResponseDto
             {
                 OrderId = payment.RazorpayOrderId,
                 KeyId = _settings.KeyId,
-                Amount = dto.Amount,
+                Amount = payment.Amount,
                 PaymentStatus = payment.Status.ToString()
             };
         }
 
-        public async Task<BookingResponseDto> VerifyPaymentAsync(
-            VerifyPaymentDto dto,
-            Guid customerId)
+        public async Task<bool> VerifyPaymentAsync(VerifyPaymentDto dto, Guid customerId)
         {
             var payment = await _paymentRepository.GetByOrderIdAsync(dto.RazorpayOrderId);
             if (payment == null || payment.Status != PaymentStatus.Created)
                 throw new Exception("Invalid payment");
+
+            var booking = await _bookingRepository.GetByIdAsync(payment.BookingId);
+            if (booking == null || booking.CustomerId != customerId)
+                throw new Exception("Invalid booking");
 
             var payload = $"{dto.RazorpayOrderId}|{dto.RazorpayPaymentId}";
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_settings.KeySecret));
@@ -83,14 +92,10 @@ namespace Servexa.Infrastructure.Services
 
             await _paymentRepository.UpdateAsync(payment);
 
-            return await _bookingService.CreateBookingAfterPaymentAsync(
-                customerId,
-                new CreateBookingAfterPaymentDto
-                {
-                    ShopId = payment.ShopId,
-                    Amount = payment.Amount,
-                    PaymentId = payment.Id
-                });
+            booking.Status = BookingStatus.Confirmed;
+            await _bookingRepository.UpdateAsync(booking);
+
+            return true;
         }
     }
 }

@@ -10,9 +10,9 @@ namespace Servexa.Application.DTOs.Booking
         public string ServiceMode { get; set; } = null!;
         public Guid? AddressId { get; set; }
         public Guid? SlotId { get; set; }
-        public decimal Amount { get; set; }
+        public decimal TotalAmount { get; set; }
         public string Status { get; set; } = null!;
         public IEnumerable<BookingItemDto> Services { get; set; } = [];
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedOn { get; set; }
     }
 }

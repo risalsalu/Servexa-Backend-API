@@ -33,6 +33,18 @@ namespace Servexa.Infrastructure.Repositories
                 "SELECT * FROM ShopServices WHERE ShopId = @shopId AND IsActive = 1 AND IsDeleted = 0",
                 new { shopId });
         }
+        public async Task<IEnumerable<ShopService>> GetByIdsAsync(IEnumerable<Guid> serviceIds)
+        {
+            using var conn = _factory.CreateConnection();
+
+            const string sql = @"
+            SELECT *
+            FROM ShopServices
+            WHERE Id IN @serviceIds AND IsDeleted = 0";
+
+            return await conn.QueryAsync<ShopService>(sql, new { serviceIds });
+        }
+
 
         public async Task<ShopServiceDetailsDto?> GetServiceWithDetailsAsync(Guid serviceId)
         {
