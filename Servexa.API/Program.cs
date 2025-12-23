@@ -81,6 +81,8 @@ builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ISlotRepository, SlotRepository>();
+builder.Services.AddScoped<IShopBookingReadRepository, ShopBookingReadRepository>();
+
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
@@ -94,6 +96,8 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
+builder.Services.AddScoped<IShopBookingReadService, ShopBookingReadService>();
+
 
 builder.Services.Configure<RazorpaySettings>(
     builder.Configuration.GetSection("RazorpaySettings"));
