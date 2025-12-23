@@ -44,5 +44,14 @@ namespace Servexa.API.Controllers
             var result = await _slotService.GetAvailableSlotsAsync(shopId, date);
             return Success(result, "Slots fetched successfully");
         }
+
+        [HttpDelete("{slotId:guid}")]
+        [Authorize(Roles = "ShopOwner")]
+        public async Task<IActionResult> Delete(Guid slotId)
+        {
+            var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _slotService.DeleteSlotAsync(slotId, ownerId);
+            return Success(result, "Slot deleted successfully");
+        }
     }
 }

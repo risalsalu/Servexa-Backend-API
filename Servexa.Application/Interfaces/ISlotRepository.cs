@@ -13,5 +13,8 @@ namespace Servexa.Application.Interfaces
         Task<bool> SlotsExistForDateAsync(Guid shopId, DateTime date);
         Task AddAsync(Slot slot);
         Task<IEnumerable<Slot>> GetAvailableSlotsAsync(Guid shopId, DateTime date);
+
+        Task<Slot?> GetByIdAsync(Guid slotId);
+        Task<bool> DeleteAsync(Guid slotId);
     }
 }

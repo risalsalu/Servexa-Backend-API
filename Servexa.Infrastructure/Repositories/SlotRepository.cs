@@ -98,5 +98,27 @@ ORDER BY StartTime";
             using var db = Conn();
             return await db.QueryAsync<Slot>(sql, new { shopId, date = date.Date });
         }
+
+        public async Task<Slot?> GetByIdAsync(Guid slotId)
+        {
+            const string sql = @"
+SELECT *
+FROM Slots
+WHERE Id = @slotId AND IsDeleted = 0";
+
+            using var db = Conn();
+            return await db.QueryFirstOrDefaultAsync<Slot>(sql, new { slotId });
+        }
+
+        public async Task<bool> DeleteAsync(Guid slotId)
+        {
+            const string sql = @"
+UPDATE Slots
+SET IsDeleted = 1
+WHERE Id = @slotId AND IsDeleted = 0";
+
+            using var db = Conn();
+            return await db.ExecuteAsync(sql, new { slotId }) > 0;
+        }
     }
 }

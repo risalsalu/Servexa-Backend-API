@@ -64,5 +64,21 @@ namespace Servexa.Infrastructure.Services
                 EndTime = s.EndTime
             });
         }
+
+        public async Task<bool> DeleteSlotAsync(Guid slotId, Guid ownerId)
+        {
+            var slot = await _slotRepository.GetByIdAsync(slotId);
+            if (slot == null)
+                throw new Exception("Slot not found");
+
+            if (slot.IsBooked)
+                throw new Exception("Booked slot cannot be deleted");
+
+            var shop = await _shopRepository.GetByIdAsync(slot.ShopId);
+            if (shop == null || shop.OwnerId != ownerId)
+                throw new Exception("Unauthorized access");
+
+            return await _slotRepository.DeleteAsync(slotId);
+        }
     }
 }

@@ -9,5 +9,6 @@ namespace Servexa.Application.Interfaces
     {
         Task<int> CreateSlotsAsync(CreateSlotDto dto, Guid ownerId);
         Task<IEnumerable<SlotResponseDto>> GetAvailableSlotsAsync(Guid shopId, DateTime date);
+        Task<bool> DeleteSlotAsync(Guid slotId, Guid ownerId);
     }
 }
