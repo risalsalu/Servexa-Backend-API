@@ -7,8 +7,8 @@ namespace Servexa.Application.Interfaces
 {
     public interface ISlotService
     {
-        Task<int> CreateSlotsAsync(CreateSlotDto dto, Guid ownerId);
+        Task<Guid> CreateSlotAsync(CreateSlotDto dto, Guid customerId);
         Task<IEnumerable<SlotResponseDto>> GetAvailableSlotsAsync(Guid shopId, DateTime date);
-        Task<bool> DeleteSlotAsync(Guid slotId, Guid ownerId);
+        Task<bool> BookSlotAsync(Guid slotId, Guid customerId);
     }
 }

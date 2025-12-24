@@ -20,38 +20,29 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "ShopOwner")]
-        public async Task<IActionResult> Create([FromBody] CreateSlotDto dto)
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> Create(CreateSlotDto dto)
         {
-            if (dto == null)
-                return BadRequestError("Invalid request body");
-
-            if (dto.Date == default)
-                return BadRequestError("Date is required");
-
-            var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var count = await _slotService.CreateSlotsAsync(dto, ownerId);
-            return Success(count, "Slots created successfully");
+            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var slotId = await _slotService.CreateSlotAsync(dto, customerId);
+            return Success(slotId, "Slot created successfully");
         }
 
         [HttpGet("shop/{shopId:guid}")]
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> Get(Guid shopId, [FromQuery] DateTime date)
         {
-            if (date == default)
-                return BadRequestError("Date is required");
-
             var result = await _slotService.GetAvailableSlotsAsync(shopId, date);
             return Success(result, "Slots fetched successfully");
         }
 
-        [HttpDelete("{slotId:guid}")]
-        [Authorize(Roles = "ShopOwner")]
-        public async Task<IActionResult> Delete(Guid slotId)
+        [HttpPost("{slotId:guid}/book")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> Book(Guid slotId)
         {
-            var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _slotService.DeleteSlotAsync(slotId, ownerId);
-            return Success(result, "Slot deleted successfully");
+            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _slotService.BookSlotAsync(slotId, customerId);
+            return Success(result, "Slot booked successfully");
         }
     }
 }

@@ -11,46 +11,37 @@ namespace Servexa.Infrastructure.Services
     public class SlotService : ISlotService
     {
         private readonly ISlotRepository _slotRepository;
-        private readonly IShopRepository _shopRepository;
 
-        public SlotService(
-            ISlotRepository slotRepository,
-            IShopRepository shopRepository)
+        public SlotService(ISlotRepository slotRepository)
         {
             _slotRepository = slotRepository;
-            _shopRepository = shopRepository;
         }
 
-        public async Task<int> CreateSlotsAsync(CreateSlotDto dto, Guid ownerId)
+        public async Task<Guid> CreateSlotAsync(CreateSlotDto dto, Guid customerId)
         {
-            var shop = await _shopRepository.GetByIdAsync(dto.ShopId);
-            if (shop == null || shop.OwnerId != ownerId)
-                throw new Exception("Unauthorized shop access");
-
-            var alreadyExists = await _slotRepository.SlotsExistForDateAsync(dto.ShopId, dto.Date);
-            if (alreadyExists)
-                throw new Exception("Slots already exist for this date");
-
-            var created = 0;
-            var current = dto.Date.Date + dto.StartTime;
+            var start = dto.Date.Date + dto.StartTime;
             var end = dto.Date.Date + dto.EndTime;
 
-            while (current.AddMinutes(30) <= end)
+            if (start.TimeOfDay < TimeSpan.FromHours(9) || end.TimeOfDay > TimeSpan.FromHours(18))
+                throw new Exception("Slot must be between 09:00 and 18:00");
+
+            var duration = (end - start).TotalMinutes;
+            if (duration < 15 || duration > 30)
+                throw new Exception("Slot duration must be between 15 and 30 minutes");
+
+            var overlap = await _slotRepository.HasOverlapAsync(dto.ShopId, start, end);
+            if (overlap)
+                throw new Exception("Slot already booked or overlapping");
+
+            var slot = new Slot
             {
-                var slotEnd = current.AddMinutes(30);
+                ShopId = dto.ShopId,
+                StartTime = start,
+                EndTime = end
+            };
 
-                await _slotRepository.AddAsync(new Slot
-                {
-                    ShopId = dto.ShopId,
-                    StartTime = current,
-                    EndTime = slotEnd
-                });
-
-                created++;
-                current = slotEnd;
-            }
-
-            return created;
+            await _slotRepository.AddAsync(slot);
+            return slot.Id;
         }
 
         public async Task<IEnumerable<SlotResponseDto>> GetAvailableSlotsAsync(Guid shopId, DateTime date)
@@ -65,20 +56,13 @@ namespace Servexa.Infrastructure.Services
             });
         }
 
-        public async Task<bool> DeleteSlotAsync(Guid slotId, Guid ownerId)
+        public async Task<bool> BookSlotAsync(Guid slotId, Guid customerId)
         {
-            var slot = await _slotRepository.GetByIdAsync(slotId);
-            if (slot == null)
-                throw new Exception("Slot not found");
+            var available = await _slotRepository.IsSlotAvailableAsync(slotId);
+            if (!available)
+                throw new Exception("Slot not available");
 
-            if (slot.IsBooked)
-                throw new Exception("Booked slot cannot be deleted");
-
-            var shop = await _shopRepository.GetByIdAsync(slot.ShopId);
-            if (shop == null || shop.OwnerId != ownerId)
-                throw new Exception("Unauthorized access");
-
-            return await _slotRepository.DeleteAsync(slotId);
+            return await _slotRepository.MarkBookedAsync(slotId, customerId);
         }
     }
 }

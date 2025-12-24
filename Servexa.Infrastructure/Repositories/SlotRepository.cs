@@ -19,26 +19,61 @@ namespace Servexa.Infrastructure.Repositories
 
         private IDbConnection Conn() => _factory.CreateConnection();
 
+        public async Task<bool> HasOverlapAsync(Guid shopId, DateTime start, DateTime end)
+        {
+            const string sql = @"
+SELECT COUNT(1)
+FROM Slots
+WHERE ShopId = @shopId
+AND IsDeleted = 0
+AND StartTime < @end
+AND EndTime > @start";
+
+            using var db = Conn();
+            return await db.ExecuteScalarAsync<int>(sql, new { shopId, start, end }) > 0;
+        }
+
         public async Task<bool> IsSlotAvailableAsync(Guid slotId)
         {
             const string sql = @"
 SELECT COUNT(1)
 FROM Slots
-WHERE Id = @slotId AND IsBooked = 0 AND IsDeleted = 0";
+WHERE Id = @slotId
+AND IsBooked = 0
+AND IsDeleted = 0
+AND StartTime > @now";
 
             using var db = Conn();
-            return await db.ExecuteScalarAsync<int>(sql, new { slotId }) > 0;
+            return await db.ExecuteScalarAsync<int>(sql, new
+            {
+                slotId,
+                now = DateTime.UtcNow
+            }) > 0;
         }
 
         public async Task<bool> LockSlotAsync(Guid slotId, Guid customerId)
         {
+            return await MarkBookedAsync(slotId, customerId);
+        }
+
+        public async Task<bool> MarkBookedAsync(Guid slotId, Guid customerId)
+        {
             const string sql = @"
 UPDATE Slots
-SET IsBooked = 1, BookedBy = @customerId
-WHERE Id = @slotId AND IsBooked = 0 AND IsDeleted = 0";
+SET IsBooked = 1,
+    BookedBy = @customerId
+WHERE Id = @slotId
+AND IsBooked = 0
+AND IsDeleted = 0
+AND StartTime > @now";
 
             using var db = Conn();
-            return await db.ExecuteAsync(sql, new { slotId, customerId }) > 0;
+            return await db.ExecuteAsync(sql, new
+            {
+                slotId,
+                customerId,
+                now = DateTime.UtcNow
+            }) > 0;
         }
 
         public async Task<bool> SlotExistsAsync(Guid shopId, DateTime start, DateTime end)
@@ -91,12 +126,18 @@ SELECT *
 FROM Slots
 WHERE ShopId = @shopId
 AND CAST(StartTime AS DATE) = @date
+AND StartTime > @now
 AND IsBooked = 0
 AND IsDeleted = 0
 ORDER BY StartTime";
 
             using var db = Conn();
-            return await db.QueryAsync<Slot>(sql, new { shopId, date = date.Date });
+            return await db.QueryAsync<Slot>(sql, new
+            {
+                shopId,
+                date = date.Date,
+                now = DateTime.UtcNow
+            });
         }
 
         public async Task<Slot?> GetByIdAsync(Guid slotId)
@@ -104,7 +145,8 @@ ORDER BY StartTime";
             const string sql = @"
 SELECT *
 FROM Slots
-WHERE Id = @slotId AND IsDeleted = 0";
+WHERE Id = @slotId
+AND IsDeleted = 0";
 
             using var db = Conn();
             return await db.QueryFirstOrDefaultAsync<Slot>(sql, new { slotId });
@@ -115,7 +157,8 @@ WHERE Id = @slotId AND IsDeleted = 0";
             const string sql = @"
 UPDATE Slots
 SET IsDeleted = 1
-WHERE Id = @slotId AND IsDeleted = 0";
+WHERE Id = @slotId
+AND IsDeleted = 0";
 
             using var db = Conn();
             return await db.ExecuteAsync(sql, new { slotId }) > 0;

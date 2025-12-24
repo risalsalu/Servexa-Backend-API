@@ -32,8 +32,8 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateBookingStatusDto dto)
         {
             var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var result = await _service.UpdateBookingStatusAsync(ownerId, dto);
-            return Success(result);
+            await _service.UpdateBookingStatusAsync(ownerId, dto);
+            return Success(true, "Booking status updated successfully");
         }
     }
 }
