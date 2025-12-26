@@ -40,23 +40,13 @@ SELECT COUNT(1)
 FROM Slots
 WHERE Id = @slotId
 AND IsBooked = 0
-AND IsDeleted = 0
-AND StartTime > @now";
+AND IsDeleted = 0";
 
             using var db = Conn();
-            return await db.ExecuteScalarAsync<int>(sql, new
-            {
-                slotId,
-                now = DateTime.UtcNow
-            }) > 0;
+            return await db.ExecuteScalarAsync<int>(sql, new { slotId }) > 0;
         }
 
         public async Task<bool> LockSlotAsync(Guid slotId, Guid customerId)
-        {
-            return await MarkBookedAsync(slotId, customerId);
-        }
-
-        public async Task<bool> MarkBookedAsync(Guid slotId, Guid customerId)
         {
             const string sql = @"
 UPDATE Slots
@@ -64,16 +54,28 @@ SET IsBooked = 1,
     BookedBy = @customerId
 WHERE Id = @slotId
 AND IsBooked = 0
-AND IsDeleted = 0
-AND StartTime > @now";
+AND IsDeleted = 0";
 
             using var db = Conn();
-            return await db.ExecuteAsync(sql, new
-            {
-                slotId,
-                customerId,
-                now = DateTime.UtcNow
-            }) > 0;
+            return await db.ExecuteAsync(sql, new { slotId, customerId }) > 0;
+        }
+
+        public async Task<bool> MarkBookedAsync(Guid slotId, Guid customerId)
+        {
+            return await LockSlotAsync(slotId, customerId);
+        }
+
+        public async Task<bool> ReleaseAsync(Guid slotId)
+        {
+            const string sql = @"
+UPDATE Slots
+SET IsBooked = 0,
+    BookedBy = NULL
+WHERE Id = @slotId
+AND IsDeleted = 0";
+
+            using var db = Conn();
+            return await db.ExecuteAsync(sql, new { slotId }) > 0;
         }
 
         public async Task<bool> SlotExistsAsync(Guid shopId, DateTime start, DateTime end)
@@ -126,7 +128,6 @@ SELECT *
 FROM Slots
 WHERE ShopId = @shopId
 AND CAST(StartTime AS DATE) = @date
-AND StartTime > @now
 AND IsBooked = 0
 AND IsDeleted = 0
 ORDER BY StartTime";
@@ -135,8 +136,7 @@ ORDER BY StartTime";
             return await db.QueryAsync<Slot>(sql, new
             {
                 shopId,
-                date = date.Date,
-                now = DateTime.UtcNow
+                date = date.Date
             });
         }
 

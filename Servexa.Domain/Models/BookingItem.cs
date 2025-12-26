@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Servexa.Domain.Models
 {
-    [Table("BookingItems")]
+    [Table("BookingServices")]
     public class BookingItem : BaseEntity
     {
         public Guid BookingId { get; set; }

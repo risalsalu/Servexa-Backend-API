@@ -10,7 +10,6 @@ namespace Servexa.API.Controllers
 {
     [ApiController]
     [Route("api/bookings")]
-    [Authorize(Roles = "Customer")]
     public class BookingController : BaseController
     {
         private readonly IBookingService _bookingService;
@@ -21,52 +20,75 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost("draft")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CreateDraft([FromBody] CreateBookingDto dto)
         {
-            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.CreateDraftAsync(customerId, dto);
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.CreateDraftAsync(userId, dto);
             return Success(result, "Booking draft created");
         }
 
         [HttpPut("{bookingId:guid}/address")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> SelectAddress(Guid bookingId, [FromBody] SelectBookingAddressDto dto)
         {
-            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.SelectAddressAsync(bookingId, dto.AddressId, customerId);
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.SelectAddressAsync(bookingId, dto.AddressId, userId);
             return Success(result, "Address selected");
         }
 
         [HttpPut("{bookingId:guid}/slot")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> SelectSlot(Guid bookingId, [FromBody] SelectBookingSlotDto dto)
         {
-            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.SelectSlotAsync(bookingId, dto.SlotId, customerId);
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.SelectSlotAsync(bookingId, dto.SlotId, userId);
             return Success(result, "Slot selected");
         }
 
         [HttpGet("{bookingId:guid}/summary")]
-        public async Task<IActionResult> GetSummary(Guid bookingId)
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> Summary(Guid bookingId)
         {
-            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.GetSummaryAsync(bookingId, customerId);
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.GetSummaryAsync(bookingId, userId);
             return Success(result, "Booking summary fetched");
         }
 
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyBookings()
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> MyBookings()
         {
-            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.GetByCustomerAsync(customerId);
-            return Success(result, "Bookings fetched successfully");
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.GetByCustomerAsync(userId);
+            return Success(result, "Bookings fetched");
         }
 
         [HttpDelete("{bookingId:guid}")]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> Cancel(Guid bookingId)
         {
-            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.CancelAsync(bookingId, customerId);
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.CancelAsync(bookingId, userId);
             return Success(result, "Booking cancelled");
+        }
+
+        [HttpGet("shop")]
+        [Authorize(Roles = "ShopOwner")]
+        public async Task<IActionResult> ShopBookings()
+        {
+            var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.GetByShopAsync(ownerId);
+            return Success(result, "Shop bookings fetched");
+        }
+
+        [HttpPut("status")]
+        [Authorize(Roles = "ShopOwner")]
+        public async Task<IActionResult> UpdateStatus([FromBody] UpdateBookingStatusDto dto)
+        {
+            var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _bookingService.UpdateStatusAsync(dto.BookingId, dto.Status, ownerId);
+            return Success(result, "Booking status updated");
         }
     }
 }
-

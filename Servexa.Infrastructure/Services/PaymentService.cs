@@ -33,7 +33,12 @@ namespace Servexa.Infrastructure.Services
             if (booking == null || booking.CustomerId != customerId)
                 throw new Exception("Invalid booking");
 
-            if (booking.Status != BookingStatus.Draft)
+            if (booking.TotalAmount < 1)
+                throw new Exception("Invalid booking amount");
+
+            if (booking.Status != BookingStatus.Draft &&
+                booking.Status != BookingStatus.PendingPayment &&
+                booking.Status != BookingStatus.PaymentFailed)
                 throw new Exception("Booking not eligible for payment");
 
             return await CreateNewPaymentAsync(booking, customerId);
@@ -45,7 +50,8 @@ namespace Servexa.Infrastructure.Services
             if (booking == null || booking.CustomerId != customerId)
                 throw new Exception("Invalid booking");
 
-            if (booking.Status != BookingStatus.PaymentFailed)
+            if (booking.Status != BookingStatus.PendingPayment &&
+                booking.Status != BookingStatus.PaymentFailed)
                 throw new Exception("Retry not allowed");
 
             var lastPayment = await _paymentRepository.GetLatestByBookingIdAsync(bookingId);
@@ -60,11 +66,15 @@ namespace Servexa.Infrastructure.Services
 
         private async Task<PaymentResponseDto> CreateNewPaymentAsync(Booking booking, Guid customerId)
         {
+            var amountInPaise = (int)(booking.TotalAmount * 100);
+            if (amountInPaise < 100)
+                throw new Exception("Order amount less than minimum allowed");
+
             var client = new RazorpayClient(_settings.KeyId, _settings.KeySecret);
 
             var order = client.Order.Create(new System.Collections.Generic.Dictionary<string, object>
             {
-                { "amount", (int)(booking.TotalAmount * 100) },
+                { "amount", amountInPaise },
                 { "currency", "INR" },
                 { "receipt", $"SX_{DateTime.UtcNow.Ticks}" }
             });

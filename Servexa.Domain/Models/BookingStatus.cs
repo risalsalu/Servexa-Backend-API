@@ -4,9 +4,9 @@
     {
         Draft = 1,
         PendingPayment = 2,
-        PaymentFailed = 3,
-        Confirmed = 4,
+        Confirmed = 3,
+        Completed = 4,
         Cancelled = 5,
-        Completed = 6
+        PaymentFailed = 6
     }
 }

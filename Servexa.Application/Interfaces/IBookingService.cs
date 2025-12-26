@@ -14,5 +14,6 @@ namespace Servexa.Application.Interfaces
         Task<IEnumerable<BookingDetailDto>> GetByCustomerAsync(Guid customerId);
         Task<IEnumerable<BookingDetailDto>> GetByShopAsync(Guid shopOwnerId);
         Task<bool> CancelAsync(Guid bookingId, Guid customerId);
+        Task<bool> UpdateStatusAsync(Guid bookingId, int newStatus, Guid shopOwnerId);
     }
 }

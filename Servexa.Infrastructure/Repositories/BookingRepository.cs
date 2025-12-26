@@ -124,8 +124,8 @@ WHERE Id = @Id AND IsDeleted = 0";
 SELECT COUNT(1)
 FROM Bookings
 WHERE CustomerId = @customerId
-  AND IsDeleted = 0
-  AND Status IN (1, 2, 3)";
+AND IsDeleted = 0
+AND Status IN (1,2,3)";
 
             using var conn = Conn();
             return await conn.ExecuteScalarAsync<int>(sql, new { customerId }) > 0;

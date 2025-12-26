@@ -12,41 +12,28 @@ namespace Servexa.Infrastructure.Services
     {
         private readonly IBookingRepository _bookingRepository;
         private readonly ISlotRepository _slotRepository;
-        private readonly ICustomerAddressRepository _addressRepository;
-        private readonly IShopServiceRepository _shopServiceRepository;
         private readonly IShopRepository _shopRepository;
+        private readonly IShopServiceRepository _shopServiceRepository;
 
         public BookingService(
             IBookingRepository bookingRepository,
             ISlotRepository slotRepository,
-            ICustomerAddressRepository addressRepository,
-            IShopServiceRepository shopServiceRepository,
-            IShopRepository shopRepository)
+            IShopRepository shopRepository,
+            IShopServiceRepository shopServiceRepository)
         {
             _bookingRepository = bookingRepository;
             _slotRepository = slotRepository;
-            _addressRepository = addressRepository;
-            _shopServiceRepository = shopServiceRepository;
             _shopRepository = shopRepository;
+            _shopServiceRepository = shopServiceRepository;
         }
 
         public async Task<BookingResponseDto> CreateDraftAsync(Guid customerId, CreateBookingDto dto)
         {
-            var shopActive = await _shopRepository.IsShopActiveAsync(dto.ShopId);
-            if (!shopActive)
-                throw new Exception("This shop is currently offline and cannot accept bookings");
-
-            var existingDraft = (await _bookingRepository.GetByCustomerAsync(customerId))
-                .Any(b => b.ShopId == dto.ShopId && b.Status == BookingStatus.Draft);
-
-            if (existingDraft)
-                throw new Exception("Draft booking already exists");
-
             var services = await _shopServiceRepository.GetByIdsAsync(dto.ServiceIds);
-            if (!services.Any())
-                throw new Exception("Invalid services");
+            var total = services.Sum(x => x.Price);
 
-            var totalAmount = services.Sum(s => s.Price);
+            if (total <= 0)
+                throw new Exception("Invalid booking amount");
 
             var booking = new Booking
             {
@@ -54,7 +41,7 @@ namespace Servexa.Infrastructure.Services
                 ShopId = dto.ShopId,
                 ServiceMode = dto.ServiceMode,
                 Status = BookingStatus.Draft,
-                TotalAmount = totalAmount
+                TotalAmount = total
             };
 
             var bookingId = await _bookingRepository.CreateAsync(booking);
@@ -72,7 +59,7 @@ namespace Servexa.Infrastructure.Services
             return new BookingResponseDto
             {
                 BookingId = bookingId,
-                TotalAmount = totalAmount,
+                TotalAmount = total,
                 Status = booking.Status.ToString()
             };
         }
@@ -83,17 +70,10 @@ namespace Servexa.Infrastructure.Services
             if (booking == null || booking.CustomerId != customerId)
                 return false;
 
-            if (booking.Status != BookingStatus.Draft)
-                return false;
-
             if (booking.ServiceMode != ServiceMode.Home)
-                throw new Exception("This booking is not a home service");
-
-            if (booking.AddressId != null)
                 return false;
 
-            var address = await _addressRepository.GetByIdAsync(addressId);
-            if (address == null || address.UserId != customerId || address.IsDeleted)
+            if (booking.Status != BookingStatus.Draft && booking.Status != BookingStatus.PendingPayment)
                 return false;
 
             booking.AddressId = addressId;
@@ -108,27 +88,58 @@ namespace Servexa.Infrastructure.Services
             if (booking == null || booking.CustomerId != customerId)
                 return false;
 
-            if (booking.Status != BookingStatus.Draft)
-                return false;
-
             if (booking.ServiceMode != ServiceMode.Onsite)
-                throw new Exception("This booking is not an onsite service");
-
-            if (booking.SlotId != null)
                 return false;
 
-            var available = await _slotRepository.IsSlotAvailableAsync(slotId);
-            if (!available)
+            if (booking.Status != BookingStatus.Draft && booking.Status != BookingStatus.PendingPayment)
                 return false;
 
-            var locked = await _slotRepository.LockSlotAsync(slotId, customerId);
-            if (!locked)
+            if (!await _slotRepository.IsSlotAvailableAsync(slotId))
+                return false;
+
+            if (!await _slotRepository.LockSlotAsync(slotId, customerId))
                 return false;
 
             booking.SlotId = slotId;
             booking.AddressId = null;
+            booking.Status = BookingStatus.PendingPayment;
 
             return await _bookingRepository.UpdateAsync(booking);
+        }
+
+        public async Task<bool> CancelAsync(Guid bookingId, Guid customerId)
+        {
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null || booking.CustomerId != customerId)
+                return false;
+
+            if (booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.Cancelled)
+                return false;
+
+            booking.Status = BookingStatus.Cancelled;
+            booking.SlotId = null;
+
+            return await _bookingRepository.UpdateAsync(booking);
+        }
+
+        public async Task<bool> UpdateStatusAsync(Guid bookingId, int newStatus, Guid shopOwnerId)
+        {
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            if (booking == null)
+                return false;
+
+            var shop = await _shopRepository.GetByIdAsync(booking.ShopId);
+            if (shop == null || shop.OwnerId != shopOwnerId)
+                return false;
+
+            if (booking.Status == BookingStatus.Confirmed &&
+                (BookingStatus)newStatus == BookingStatus.Completed)
+            {
+                booking.Status = BookingStatus.Completed;
+                return await _bookingRepository.UpdateAsync(booking);
+            }
+
+            return false;
         }
 
         public async Task<BookingDetailDto> GetSummaryAsync(Guid bookingId, Guid customerId)
@@ -137,7 +148,7 @@ namespace Servexa.Infrastructure.Services
             if (booking == null || booking.CustomerId != customerId)
                 throw new Exception("Booking not found");
 
-            var items = await _bookingRepository.GetItemsByBookingIdAsync(booking.Id);
+            var items = await _bookingRepository.GetItemsByBookingIdAsync(bookingId);
 
             return new BookingDetailDto
             {
@@ -160,45 +171,27 @@ namespace Servexa.Infrastructure.Services
 
         public async Task<IEnumerable<BookingDetailDto>> GetByCustomerAsync(Guid customerId)
         {
-            var bookings = await _bookingRepository.GetByCustomerAsync(customerId);
-            var result = new List<BookingDetailDto>();
-
-            foreach (var booking in bookings)
-            {
-                var items = await _bookingRepository.GetItemsByBookingIdAsync(booking.Id);
-
-                result.Add(new BookingDetailDto
-                {
-                    BookingId = booking.Id,
-                    ShopId = booking.ShopId,
-                    ServiceMode = booking.ServiceMode.ToString(),
-                    AddressId = booking.AddressId,
-                    SlotId = booking.SlotId,
-                    TotalAmount = booking.TotalAmount,
-                    Status = booking.Status.ToString(),
-                    CreatedOn = booking.CreatedOn,
-                    Services = items.Select(i => new BookingItemDto
-                    {
-                        ServiceId = i.ServiceId,
-                        Price = i.Price,
-                        DurationInMinutes = i.DurationInMinutes
-                    })
-                });
-            }
-
-            return result;
+            return await Map(await _bookingRepository.GetByCustomerAsync(customerId));
         }
 
         public async Task<IEnumerable<BookingDetailDto>> GetByShopAsync(Guid shopOwnerId)
         {
-            var bookings = await _bookingRepository.GetByShopAsync(shopOwnerId);
-            var result = new List<BookingDetailDto>();
+            var shop = await _shopRepository.GetByOwnerIdAsync(shopOwnerId);
+            if (shop == null)
+                throw new Exception("Shop not found");
+
+            return await Map(await _bookingRepository.GetByShopAsync(shop.Id));
+        }
+
+        private async Task<IEnumerable<BookingDetailDto>> Map(IEnumerable<Booking> bookings)
+        {
+            var list = new List<BookingDetailDto>();
 
             foreach (var booking in bookings)
             {
                 var items = await _bookingRepository.GetItemsByBookingIdAsync(booking.Id);
 
-                result.Add(new BookingDetailDto
+                list.Add(new BookingDetailDto
                 {
                     BookingId = booking.Id,
                     ShopId = booking.ShopId,
@@ -217,21 +210,7 @@ namespace Servexa.Infrastructure.Services
                 });
             }
 
-            return result;
-        }
-
-        public async Task<bool> CancelAsync(Guid bookingId, Guid customerId)
-        {
-            var booking = await _bookingRepository.GetByIdAsync(bookingId);
-            if (booking == null || booking.CustomerId != customerId)
-                return false;
-
-            if (booking.Status != BookingStatus.Draft &&
-                booking.Status != BookingStatus.PendingPayment)
-                return false;
-
-            booking.Status = BookingStatus.Cancelled;
-            return await _bookingRepository.UpdateAsync(booking);
+            return list;
         }
     }
 }
