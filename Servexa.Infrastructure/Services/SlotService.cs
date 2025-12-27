@@ -23,15 +23,14 @@ namespace Servexa.Infrastructure.Services
             var end = dto.Date.Date + dto.EndTime;
 
             if (start.TimeOfDay < TimeSpan.FromHours(9) || end.TimeOfDay > TimeSpan.FromHours(18))
-                throw new Exception("Slot must be between 09:00 and 18:00");
+                throw new Exception("Invalid slot time");
 
             var duration = (end - start).TotalMinutes;
             if (duration < 15 || duration > 30)
-                throw new Exception("Slot duration must be between 15 and 30 minutes");
+                throw new Exception("Invalid slot duration");
 
-            var overlap = await _slotRepository.HasOverlapAsync(dto.ShopId, start, end);
-            if (overlap)
-                throw new Exception("Slot already booked or overlapping");
+            if (await _slotRepository.HasOverlapAsync(dto.ShopId, start, end))
+                throw new Exception("Slot already exists");
 
             var slot = new Slot
             {
@@ -54,15 +53,6 @@ namespace Servexa.Infrastructure.Services
                 StartTime = s.StartTime,
                 EndTime = s.EndTime
             });
-        }
-
-        public async Task<bool> BookSlotAsync(Guid slotId, Guid customerId)
-        {
-            var available = await _slotRepository.IsSlotAvailableAsync(slotId);
-            if (!available)
-                throw new Exception("Slot not available");
-
-            return await _slotRepository.MarkBookedAsync(slotId, customerId);
         }
     }
 }

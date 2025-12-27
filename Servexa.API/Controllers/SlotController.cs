@@ -25,7 +25,7 @@ namespace Servexa.API.Controllers
         {
             var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var slotId = await _slotService.CreateSlotAsync(dto, customerId);
-            return Success(slotId, "Slot created successfully");
+            return Success(slotId);
         }
 
         [HttpGet("shop/{shopId:guid}")]
@@ -33,16 +33,7 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> Get(Guid shopId, [FromQuery] DateTime date)
         {
             var result = await _slotService.GetAvailableSlotsAsync(shopId, date);
-            return Success(result, "Slots fetched successfully");
-        }
-
-        [HttpPost("{slotId:guid}/book")]
-        [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> Book(Guid slotId)
-        {
-            var customerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _slotService.BookSlotAsync(slotId, customerId);
-            return Success(result, "Slot booked successfully");
+            return Success(result);
         }
     }
 }

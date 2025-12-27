@@ -116,10 +116,17 @@ namespace Servexa.Infrastructure.Services
             if (booking.Status == BookingStatus.Completed || booking.Status == BookingStatus.Cancelled)
                 return false;
 
+            var slotId = booking.SlotId;
+
             booking.Status = BookingStatus.Cancelled;
             booking.SlotId = null;
 
-            return await _bookingRepository.UpdateAsync(booking);
+            var updated = await _bookingRepository.UpdateAsync(booking);
+
+            if (updated && slotId.HasValue)
+                await _slotRepository.DeleteAsync(slotId.Value);
+
+            return updated;
         }
 
         public async Task<bool> UpdateStatusAsync(Guid bookingId, int newStatus, Guid shopOwnerId)

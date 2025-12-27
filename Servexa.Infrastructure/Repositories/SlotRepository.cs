@@ -60,11 +60,6 @@ AND IsDeleted = 0";
             return await db.ExecuteAsync(sql, new { slotId, customerId }) > 0;
         }
 
-        public async Task<bool> MarkBookedAsync(Guid slotId, Guid customerId)
-        {
-            return await LockSlotAsync(slotId, customerId);
-        }
-
         public async Task<bool> ReleaseAsync(Guid slotId)
         {
             const string sql = @"
@@ -78,31 +73,16 @@ AND IsDeleted = 0";
             return await db.ExecuteAsync(sql, new { slotId }) > 0;
         }
 
-        public async Task<bool> SlotExistsAsync(Guid shopId, DateTime start, DateTime end)
+        public async Task<bool> DeleteAsync(Guid slotId)
         {
             const string sql = @"
-SELECT COUNT(1)
-FROM Slots
-WHERE ShopId = @shopId
-AND IsDeleted = 0
-AND StartTime < @end
-AND EndTime > @start";
-
-            using var db = Conn();
-            return await db.ExecuteScalarAsync<int>(sql, new { shopId, start, end }) > 0;
-        }
-
-        public async Task<bool> SlotsExistForDateAsync(Guid shopId, DateTime date)
-        {
-            const string sql = @"
-SELECT COUNT(1)
-FROM Slots
-WHERE ShopId = @shopId
-AND CAST(StartTime AS DATE) = @date
+UPDATE Slots
+SET IsDeleted = 1
+WHERE Id = @slotId
 AND IsDeleted = 0";
 
             using var db = Conn();
-            return await db.ExecuteScalarAsync<int>(sql, new { shopId, date = date.Date }) > 0;
+            return await db.ExecuteAsync(sql, new { slotId }) > 0;
         }
 
         public async Task AddAsync(Slot slot)
@@ -133,11 +113,7 @@ AND IsDeleted = 0
 ORDER BY StartTime";
 
             using var db = Conn();
-            return await db.QueryAsync<Slot>(sql, new
-            {
-                shopId,
-                date = date.Date
-            });
+            return await db.QueryAsync<Slot>(sql, new { shopId, date = date.Date });
         }
 
         public async Task<Slot?> GetByIdAsync(Guid slotId)
@@ -150,18 +126,6 @@ AND IsDeleted = 0";
 
             using var db = Conn();
             return await db.QueryFirstOrDefaultAsync<Slot>(sql, new { slotId });
-        }
-
-        public async Task<bool> DeleteAsync(Guid slotId)
-        {
-            const string sql = @"
-UPDATE Slots
-SET IsDeleted = 1
-WHERE Id = @slotId
-AND IsDeleted = 0";
-
-            using var db = Conn();
-            return await db.ExecuteAsync(sql, new { slotId }) > 0;
         }
     }
 }
