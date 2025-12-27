@@ -33,8 +33,12 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> SelectAddress(Guid bookingId, [FromBody] SelectBookingAddressDto dto)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.SelectAddressAsync(bookingId, dto.AddressId, userId);
-            return Success(result, "Address selected");
+            var updated = await _bookingService.SelectAddressAsync(bookingId, dto.AddressId, userId);
+
+            if (!updated)
+                return BadRequestError("Address selection not allowed");
+
+            return Success(true, "Address selected");
         }
 
         [HttpPut("{bookingId:guid}/slot")]
@@ -42,8 +46,12 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> SelectSlot(Guid bookingId, [FromBody] SelectBookingSlotDto dto)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.SelectSlotAsync(bookingId, dto.SlotId, userId);
-            return Success(result, "Slot selected");
+            var updated = await _bookingService.SelectSlotAsync(bookingId, dto.SlotId, userId);
+
+            if (!updated)
+                return BadRequestError("Slot selection not allowed");
+
+            return Success(true, "Slot selected");
         }
 
         [HttpGet("{bookingId:guid}/summary")]
@@ -69,8 +77,12 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> Cancel(Guid bookingId)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.CancelAsync(bookingId, userId);
-            return Success(result, "Booking cancelled");
+            var cancelled = await _bookingService.CancelAsync(bookingId, userId);
+
+            if (!cancelled)
+                return BadRequestError("Booking cancellation not allowed");
+
+            return Success(true, "Booking cancelled");
         }
 
         [HttpGet("shop")]
@@ -87,8 +99,12 @@ namespace Servexa.API.Controllers
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateBookingStatusDto dto)
         {
             var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bookingService.UpdateStatusAsync(dto.BookingId, dto.Status, ownerId);
-            return Success(result, "Booking status updated");
+            var updated = await _bookingService.UpdateStatusAsync(dto.BookingId, dto.Status, ownerId);
+
+            if (!updated)
+                return BadRequestError("Booking status update not allowed");
+
+            return Success(true, "Booking marked as completed");
         }
     }
 }

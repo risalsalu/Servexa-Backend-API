@@ -73,7 +73,7 @@ namespace Servexa.Infrastructure.Services
             if (booking.ServiceMode != ServiceMode.Home)
                 return false;
 
-            if (booking.Status != BookingStatus.Draft && booking.Status != BookingStatus.PendingPayment)
+            if (booking.Status != BookingStatus.Draft)
                 return false;
 
             booking.AddressId = addressId;
@@ -91,7 +91,7 @@ namespace Servexa.Infrastructure.Services
             if (booking.ServiceMode != ServiceMode.Onsite)
                 return false;
 
-            if (booking.Status != BookingStatus.Draft && booking.Status != BookingStatus.PendingPayment)
+            if (booking.Status != BookingStatus.Draft)
                 return false;
 
             if (!await _slotRepository.IsSlotAvailableAsync(slotId))
@@ -102,7 +102,6 @@ namespace Servexa.Infrastructure.Services
 
             booking.SlotId = slotId;
             booking.AddressId = null;
-            booking.Status = BookingStatus.PendingPayment;
 
             return await _bookingRepository.UpdateAsync(booking);
         }
@@ -139,8 +138,9 @@ namespace Servexa.Infrastructure.Services
             if (shop == null || shop.OwnerId != shopOwnerId)
                 return false;
 
-            if (booking.Status == BookingStatus.Confirmed &&
-                (BookingStatus)newStatus == BookingStatus.Completed)
+            var targetStatus = (BookingStatus)newStatus;
+
+            if (booking.Status == BookingStatus.Confirmed && targetStatus == BookingStatus.Completed)
             {
                 booking.Status = BookingStatus.Completed;
                 return await _bookingRepository.UpdateAsync(booking);
