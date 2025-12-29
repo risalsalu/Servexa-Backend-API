@@ -4,6 +4,7 @@ using System.Data;
 using System.Threading.Tasks;
 using Dapper;
 using Servexa.Application.Interfaces;
+using Servexa.Application.DTOs.Booking;
 using Servexa.Domain.Models;
 using Servexa.Infrastructure.Repositories.Generic;
 
@@ -100,6 +101,30 @@ ORDER BY CreatedOn DESC";
 
             using var conn = Conn();
             return await conn.QueryAsync<Booking>(sql, new { shopId });
+        }
+
+        public async Task<IEnumerable<BookingWithCustomerDto>> GetByShopWithCustomerAsync(Guid shopId)
+        {
+            const string sql = @"
+SELECT
+    b.Id AS BookingId,
+    b.ShopId,
+    b.CustomerId,
+    u.FullName AS CustomerName,
+    b.ServiceMode,
+    b.AddressId,
+    b.SlotId,
+    b.TotalAmount,
+    b.Status,
+    b.CreatedOn
+FROM Bookings b
+INNER JOIN Users u ON u.Id = b.CustomerId
+WHERE b.ShopId = @shopId
+AND b.IsDeleted = 0
+ORDER BY b.CreatedOn DESC";
+
+            using var conn = Conn();
+            return await conn.QueryAsync<BookingWithCustomerDto>(sql, new { shopId });
         }
 
         public async Task<bool> UpdateAsync(Booking booking)

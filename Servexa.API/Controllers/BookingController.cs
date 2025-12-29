@@ -19,11 +19,16 @@ namespace Servexa.API.Controllers
             _bookingService = bookingService;
         }
 
+        private Guid GetUserId()
+        {
+            return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        }
+
         [HttpPost("draft")]
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CreateDraft([FromBody] CreateBookingDto dto)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userId = GetUserId();
             var result = await _bookingService.CreateDraftAsync(userId, dto);
             return Success(result, "Booking draft created");
         }
@@ -32,7 +37,7 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> SelectAddress(Guid bookingId, [FromBody] SelectBookingAddressDto dto)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userId = GetUserId();
             var updated = await _bookingService.SelectAddressAsync(bookingId, dto.AddressId, userId);
 
             if (!updated)
@@ -45,7 +50,7 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> SelectSlot(Guid bookingId, [FromBody] SelectBookingSlotDto dto)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userId = GetUserId();
             var updated = await _bookingService.SelectSlotAsync(bookingId, dto.SlotId, userId);
 
             if (!updated)
@@ -58,7 +63,7 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> Summary(Guid bookingId)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userId = GetUserId();
             var result = await _bookingService.GetSummaryAsync(bookingId, userId);
             return Success(result, "Booking summary fetched");
         }
@@ -67,7 +72,7 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> MyBookings()
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userId = GetUserId();
             var result = await _bookingService.GetByCustomerAsync(userId);
             return Success(result, "Bookings fetched");
         }
@@ -76,7 +81,7 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> Cancel(Guid bookingId)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userId = GetUserId();
             var cancelled = await _bookingService.CancelAsync(bookingId, userId);
 
             if (!cancelled)
@@ -89,7 +94,7 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "ShopOwner")]
         public async Task<IActionResult> ShopBookings()
         {
-            var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ownerId = GetUserId();
             var result = await _bookingService.GetByShopAsync(ownerId);
             return Success(result, "Shop bookings fetched");
         }
@@ -98,13 +103,13 @@ namespace Servexa.API.Controllers
         [Authorize(Roles = "ShopOwner")]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateBookingStatusDto dto)
         {
-            var ownerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var ownerId = GetUserId();
             var updated = await _bookingService.UpdateStatusAsync(dto.BookingId, dto.Status, ownerId);
 
             if (!updated)
                 return BadRequestError("Booking status update not allowed");
 
-            return Success(true, "Booking marked as completed");
+            return Success(true, "Booking status updated");
         }
     }
 }

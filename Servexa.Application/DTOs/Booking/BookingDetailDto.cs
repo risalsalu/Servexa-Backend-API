@@ -7,6 +7,8 @@ namespace Servexa.Application.DTOs.Booking
     {
         public Guid BookingId { get; set; }
         public Guid ShopId { get; set; }
+        public Guid CustomerId { get; set; }
+        public string CustomerName { get; set; } = null!;
         public string ServiceMode { get; set; } = null!;
         public Guid? AddressId { get; set; }
         public Guid? SlotId { get; set; }

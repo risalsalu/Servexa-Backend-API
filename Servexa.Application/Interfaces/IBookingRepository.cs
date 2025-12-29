@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Servexa.Domain.Models;
+using Servexa.Application.DTOs.Booking;
 
 namespace Servexa.Application.Interfaces
 {
@@ -13,6 +14,7 @@ namespace Servexa.Application.Interfaces
         Task<Booking?> GetByIdAsync(Guid bookingId);
         Task<IEnumerable<Booking>> GetByCustomerAsync(Guid customerId);
         Task<IEnumerable<Booking>> GetByShopAsync(Guid shopId);
+        Task<IEnumerable<BookingWithCustomerDto>> GetByShopWithCustomerAsync(Guid shopId);
         Task<bool> UpdateAsync(Booking booking);
         Task<bool> HasActiveBookingsAsync(Guid customerId);
     }

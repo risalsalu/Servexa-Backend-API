@@ -77,8 +77,6 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.AddressId = addressId;
-            booking.SlotId = null;
-
             return await _bookingRepository.UpdateAsync(booking);
         }
 
@@ -101,8 +99,6 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.SlotId = slotId;
-            booking.AddressId = null;
-
             return await _bookingRepository.UpdateAsync(booking);
         }
 
@@ -118,8 +114,6 @@ namespace Servexa.Infrastructure.Services
             var slotId = booking.SlotId;
 
             booking.Status = BookingStatus.Cancelled;
-            booking.SlotId = null;
-
             var updated = await _bookingRepository.UpdateAsync(booking);
 
             if (updated && slotId.HasValue)
@@ -134,11 +128,20 @@ namespace Servexa.Infrastructure.Services
             if (booking == null)
                 return false;
 
+            if (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+                return false;
+
             var shop = await _shopRepository.GetByIdAsync(booking.ShopId);
             if (shop == null || shop.OwnerId != shopOwnerId)
                 return false;
 
             var targetStatus = (BookingStatus)newStatus;
+
+            if (booking.Status == BookingStatus.PendingPayment && targetStatus == BookingStatus.Confirmed)
+            {
+                booking.Status = BookingStatus.Confirmed;
+                return await _bookingRepository.UpdateAsync(booking);
+            }
 
             if (booking.Status == BookingStatus.Confirmed && targetStatus == BookingStatus.Completed)
             {
@@ -161,6 +164,7 @@ namespace Servexa.Infrastructure.Services
             {
                 BookingId = booking.Id,
                 ShopId = booking.ShopId,
+                CustomerId = booking.CustomerId,
                 ServiceMode = booking.ServiceMode.ToString(),
                 AddressId = booking.AddressId,
                 SlotId = booking.SlotId,
@@ -178,7 +182,8 @@ namespace Servexa.Infrastructure.Services
 
         public async Task<IEnumerable<BookingDetailDto>> GetByCustomerAsync(Guid customerId)
         {
-            return await Map(await _bookingRepository.GetByCustomerAsync(customerId));
+            var bookings = await _bookingRepository.GetByCustomerAsync(customerId);
+            return await MapCustomerBookings(bookings);
         }
 
         public async Task<IEnumerable<BookingDetailDto>> GetByShopAsync(Guid shopOwnerId)
@@ -187,10 +192,38 @@ namespace Servexa.Infrastructure.Services
             if (shop == null)
                 throw new Exception("Shop not found");
 
-            return await Map(await _bookingRepository.GetByShopAsync(shop.Id));
+            var bookings = await _bookingRepository.GetByShopWithCustomerAsync(shop.Id);
+            var result = new List<BookingDetailDto>();
+
+            foreach (var b in bookings)
+            {
+                var items = await _bookingRepository.GetItemsByBookingIdAsync(b.BookingId);
+
+                result.Add(new BookingDetailDto
+                {
+                    BookingId = b.BookingId,
+                    ShopId = b.ShopId,
+                    CustomerId = b.CustomerId,
+                    CustomerName = b.CustomerName,
+                    ServiceMode = b.ServiceMode,
+                    AddressId = b.AddressId,
+                    SlotId = b.SlotId,
+                    TotalAmount = b.TotalAmount,
+                    Status = ((BookingStatus)b.Status).ToString(),
+                    CreatedOn = b.CreatedOn,
+                    Services = items.Select(i => new BookingItemDto
+                    {
+                        ServiceId = i.ServiceId,
+                        Price = i.Price,
+                        DurationInMinutes = i.DurationInMinutes
+                    })
+                });
+            }
+
+            return result;
         }
 
-        private async Task<IEnumerable<BookingDetailDto>> Map(IEnumerable<Booking> bookings)
+        private async Task<IEnumerable<BookingDetailDto>> MapCustomerBookings(IEnumerable<Booking> bookings)
         {
             var list = new List<BookingDetailDto>();
 
@@ -202,6 +235,7 @@ namespace Servexa.Infrastructure.Services
                 {
                     BookingId = booking.Id,
                     ShopId = booking.ShopId,
+                    CustomerId = booking.CustomerId,
                     ServiceMode = booking.ServiceMode.ToString(),
                     AddressId = booking.AddressId,
                     SlotId = booking.SlotId,

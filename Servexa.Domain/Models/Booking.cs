@@ -13,5 +13,8 @@ namespace Servexa.Domain.Models
         public Guid? SlotId { get; set; }
         public decimal TotalAmount { get; set; }
         public BookingStatus Status { get; set; }
+
+        [NotMapped]
+        public string? CustomerName { get; set; }
     }
 }
