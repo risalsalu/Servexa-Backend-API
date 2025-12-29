@@ -77,6 +77,8 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.AddressId = addressId;
+            booking.Status = BookingStatus.PendingPayment;
+
             return await _bookingRepository.UpdateAsync(booking);
         }
 
@@ -99,6 +101,8 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.SlotId = slotId;
+            booking.Status = BookingStatus.PendingPayment;
+
             return await _bookingRepository.UpdateAsync(booking);
         }
 

@@ -84,7 +84,8 @@ WHERE Id = @bookingId AND IsDeleted = 0";
             const string sql = @"
 SELECT *
 FROM Bookings
-WHERE CustomerId = @customerId AND IsDeleted = 0
+WHERE CustomerId = @customerId
+AND IsDeleted = 0
 ORDER BY CreatedOn DESC";
 
             using var conn = Conn();
@@ -96,7 +97,8 @@ ORDER BY CreatedOn DESC";
             const string sql = @"
 SELECT *
 FROM Bookings
-WHERE ShopId = @shopId AND IsDeleted = 0
+WHERE ShopId = @shopId
+AND IsDeleted = 0
 ORDER BY CreatedOn DESC";
 
             using var conn = Conn();
@@ -127,6 +129,23 @@ ORDER BY b.CreatedOn DESC";
             return await conn.QueryAsync<BookingWithCustomerDto>(sql, new { shopId });
         }
 
+        public async Task<bool> HasConfirmedBookingsAsync(Guid shopId)
+        {
+            const string sql = @"
+SELECT COUNT(1)
+FROM Bookings
+WHERE ShopId = @shopId
+AND IsDeleted = 0
+AND Status = @status";
+
+            using var conn = Conn();
+            return await conn.ExecuteScalarAsync<int>(sql, new
+            {
+                shopId,
+                status = (int)BookingStatus.Confirmed
+            }) > 0;
+        }
+
         public async Task<bool> UpdateAsync(Booking booking)
         {
             booking.ModifiedOn = DateTime.UtcNow;
@@ -137,7 +156,8 @@ SET AddressId = @AddressId,
     SlotId = @SlotId,
     Status = @Status,
     ModifiedOn = @ModifiedOn
-WHERE Id = @Id AND IsDeleted = 0";
+WHERE Id = @Id
+AND IsDeleted = 0";
 
             using var conn = Conn();
             return await conn.ExecuteAsync(sql, booking) > 0;

@@ -14,15 +14,18 @@ namespace Servexa.Infrastructure.Services
     {
         private readonly IShopRepository _shopRepository;
         private readonly IShopImageRepository _shopImageRepository;
+        private readonly IBookingRepository _bookingRepository;
         private readonly ICloudinaryService _cloudinary;
 
         public ShopService(
             IShopRepository shopRepository,
             IShopImageRepository shopImageRepository,
+            IBookingRepository bookingRepository,
             ICloudinaryService cloudinary)
         {
             _shopRepository = shopRepository;
             _shopImageRepository = shopImageRepository;
+            _bookingRepository = bookingRepository;
             _cloudinary = cloudinary;
         }
 
@@ -150,31 +153,19 @@ namespace Servexa.Infrastructure.Services
             if (shopImage != null)
             {
                 var (url, publicId) = await _cloudinary.UploadAsync(shopImage);
-                await _shopImageRepository.UpdateExistingImageAsync(
-                    shop.Id,
-                    ShopImageType.Shop,
-                    url,
-                    publicId);
+                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, ShopImageType.Shop, url, publicId);
             }
 
             if (licenseImage != null)
             {
                 var (url, publicId) = await _cloudinary.UploadAsync(licenseImage);
-                await _shopImageRepository.UpdateExistingImageAsync(
-                    shop.Id,
-                    ShopImageType.License,
-                    url,
-                    publicId);
+                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, ShopImageType.License, url, publicId);
             }
 
             if (idProofImage != null)
             {
                 var (url, publicId) = await _cloudinary.UploadAsync(idProofImage);
-                await _shopImageRepository.UpdateExistingImageAsync(
-                    shop.Id,
-                    ShopImageType.OwnerId,
-                    url,
-                    publicId);
+                await _shopImageRepository.UpdateExistingImageAsync(shop.Id, ShopImageType.OwnerId, url, publicId);
             }
 
             await _shopRepository.UpdateAsync(shop);
@@ -187,8 +178,15 @@ namespace Servexa.Infrastructure.Services
             if (shop == null)
                 throw new Exception("Shop not found");
 
-            if (!dto.IsActive && string.IsNullOrWhiteSpace(dto.OfflineReason))
-                throw new Exception("Offline reason is required");
+            if (!dto.IsActive)
+            {
+                if (string.IsNullOrWhiteSpace(dto.OfflineReason))
+                    throw new Exception("Offline reason is required");
+
+                var hasConfirmed = await _bookingRepository.HasConfirmedBookingsAsync(shop.Id);
+                if (hasConfirmed)
+                    throw new Exception("Cannot go offline while confirmed bookings exist");
+            }
 
             await _shopRepository.SetActiveStatusAsync(
                 ownerId,

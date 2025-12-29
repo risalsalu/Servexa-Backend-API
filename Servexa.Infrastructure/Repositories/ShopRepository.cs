@@ -85,7 +85,8 @@ WHERE Id = @Id AND IsDeleted = 0";
             const string sql = @"
 UPDATE Shops
 SET IsActive = @isActive,
-    OfflineReason = @offlineReason
+    OfflineReason = @offlineReason,
+    ModifiedOn = @modifiedOn
 WHERE OwnerId = @ownerId AND IsDeleted = 0";
 
             using var db = Conn();
@@ -93,7 +94,8 @@ WHERE OwnerId = @ownerId AND IsDeleted = 0";
             {
                 ownerId,
                 isActive,
-                offlineReason = isActive ? null : offlineReason
+                offlineReason = isActive ? null : offlineReason,
+                modifiedOn = DateTime.UtcNow
             });
         }
 
