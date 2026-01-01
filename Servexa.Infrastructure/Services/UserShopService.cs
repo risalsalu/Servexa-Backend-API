@@ -12,20 +12,32 @@ namespace Servexa.Application.Services
         private readonly IShopRepository _shopRepository;
         private readonly IShopServiceRepository _shopServiceRepository;
         private readonly IShopImageRepository _shopImageRepository;
+        private readonly ICustomerAddressRepository _customerAddressRepository;
 
         public UserShopService(
             IShopRepository shopRepository,
             IShopServiceRepository shopServiceRepository,
-            IShopImageRepository shopImageRepository)
+            IShopImageRepository shopImageRepository,
+            ICustomerAddressRepository customerAddressRepository)
         {
             _shopRepository = shopRepository;
             _shopServiceRepository = shopServiceRepository;
             _shopImageRepository = shopImageRepository;
+            _customerAddressRepository = customerAddressRepository;
         }
 
-        public async Task<IEnumerable<UserShopListDto>> GetShopsAsync()
+        public async Task<IEnumerable<UserShopListDto>> GetShopsAsync(Guid customerId)
         {
-            var shops = await _shopRepository.GetAllAsync();
+            var address = await _customerAddressRepository.GetActiveAddressAsync(customerId);
+            if (address == null || !address.Lat.HasValue || !address.Lng.HasValue)
+                return Enumerable.Empty<UserShopListDto>();
+
+            var shops = await _shopRepository.GetNearbyShopsAsync(
+                (decimal)address.Lat.Value,
+                (decimal)address.Lng.Value,
+                10
+            );
+
             var result = new List<UserShopListDto>();
 
             foreach (var s in shops)
@@ -46,9 +58,19 @@ namespace Servexa.Application.Services
             return result;
         }
 
-        public async Task<UserShopWithServicesDto?> GetShopServicesAsync(Guid shopId)
+        public async Task<UserShopWithServicesDto?> GetShopServicesAsync(Guid customerId, Guid shopId)
         {
-            var shop = await _shopRepository.GetByIdAsync(shopId);
+            var address = await _customerAddressRepository.GetActiveAddressAsync(customerId);
+            if (address == null || !address.Lat.HasValue || !address.Lng.HasValue)
+                return null;
+
+            var shops = await _shopRepository.GetNearbyShopsAsync(
+                (decimal)address.Lat.Value,
+                (decimal)address.Lng.Value,
+                10
+            );
+
+            var shop = shops.FirstOrDefault(s => s.Id == shopId);
             if (shop == null)
                 return null;
 

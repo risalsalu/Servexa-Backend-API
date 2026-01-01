@@ -16,5 +16,6 @@ namespace Servexa.Application.Interfaces
         Task<IEnumerable<Shop>> GetActiveShopsAsync();
         Task<IEnumerable<Shop>> GetAllAsync();
         Task<bool> IsShopActiveAsync(Guid shopId);
+        Task<IEnumerable<Shop>> GetNearbyShopsAsync(decimal customerLat, decimal customerLng, int radiusKm);
     }
 }

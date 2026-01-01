@@ -115,13 +115,37 @@ WHERE OwnerId = @ownerId AND IsDeleted = 0";
 
         public async Task<bool> IsShopActiveAsync(Guid shopId)
         {
-            const string sql = @"
-SELECT IsActive
-FROM Shops
-WHERE Id = @shopId AND IsDeleted = 0";
-
+            const string sql = "SELECT IsActive FROM Shops WHERE Id = @shopId AND IsDeleted = 0";
             using var db = Conn();
             return await db.ExecuteScalarAsync<bool>(sql, new { shopId });
+        }
+
+        public async Task<IEnumerable<Shop>> GetNearbyShopsAsync(decimal customerLat, decimal customerLng, int radiusKm)
+        {
+            const string sql = @"
+SELECT *
+FROM Shops
+WHERE IsDeleted = 0
+AND IsActive = 1
+AND Latitude IS NOT NULL
+AND Longitude IS NOT NULL
+AND (
+    6371 * ACOS(
+        COS(RADIANS(@customerLat)) *
+        COS(RADIANS(Latitude)) *
+        COS(RADIANS(Longitude) - RADIANS(@customerLng)) +
+        SIN(RADIANS(@customerLat)) *
+        SIN(RADIANS(Latitude))
+    )
+) <= @radiusKm";
+
+            using var db = Conn();
+            return await db.QueryAsync<Shop>(sql, new
+            {
+                customerLat,
+                customerLng,
+                radiusKm
+            });
         }
     }
 }

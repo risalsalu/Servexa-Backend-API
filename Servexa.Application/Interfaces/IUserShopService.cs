@@ -7,7 +7,7 @@ namespace Servexa.Application.Interfaces
 {
     public interface IUserShopService
     {
-        Task<IEnumerable<UserShopListDto>> GetShopsAsync();
-        Task<UserShopWithServicesDto?> GetShopServicesAsync(Guid shopId);
+        Task<IEnumerable<UserShopListDto>> GetShopsAsync(Guid customerId);
+        Task<UserShopWithServicesDto?> GetShopServicesAsync(Guid customerId, Guid shopId);
     }
 }
