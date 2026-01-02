@@ -46,14 +46,14 @@ VALUES
 
         public async Task<Shop?> GetByOwnerIdAsync(Guid ownerId)
         {
-            const string sql = "SELECT TOP 1 * FROM Shops WHERE OwnerId = @ownerId AND IsDeleted = 0";
+            const string sql = "SELECT * FROM Shops WHERE OwnerId = @ownerId AND IsDeleted = 0";
             using var db = Conn();
             return await db.QueryFirstOrDefaultAsync<Shop>(sql, new { ownerId });
         }
 
         public async Task<Shop?> GetByIdAsync(Guid id)
         {
-            const string sql = "SELECT TOP 1 * FROM Shops WHERE Id = @id AND IsDeleted = 0";
+            const string sql = "SELECT * FROM Shops WHERE Id = @id AND IsDeleted = 0";
             using var db = Conn();
             return await db.QueryFirstOrDefaultAsync<Shop>(sql, new { id });
         }
@@ -126,7 +126,6 @@ WHERE OwnerId = @ownerId AND IsDeleted = 0";
 SELECT *
 FROM Shops
 WHERE IsDeleted = 0
-AND IsActive = 1
 AND Latitude IS NOT NULL
 AND Longitude IS NOT NULL
 AND (

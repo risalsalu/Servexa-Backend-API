@@ -38,6 +38,9 @@ namespace Servexa.Application.Services
                 10
             );
 
+            if (!shops.Any())
+                return Enumerable.Empty<UserShopListDto>();
+
             var result = new List<UserShopListDto>();
 
             foreach (var s in shops)
