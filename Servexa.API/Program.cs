@@ -56,13 +56,18 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddCors(o =>
+builder.Services.AddCors(options =>
 {
-    o.AddPolicy("AllowAll", p =>
+    options.AddPolicy("FrontendPolicy", policy =>
     {
-        p.AllowAnyOrigin()
-         .AllowAnyHeader()
-         .AllowAnyMethod();
+        policy
+            .WithOrigins(
+                "http://localhost:5173",
+                "http://localhost:5174"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -82,7 +87,6 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ISlotRepository, SlotRepository>();
 
-
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressService>();
 builder.Services.AddScoped<IShopService, ShopService>();
@@ -95,7 +99,6 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
-
 
 builder.Services.Configure<RazorpaySettings>(
     builder.Configuration.GetSection("RazorpaySettings"));
@@ -154,7 +157,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
