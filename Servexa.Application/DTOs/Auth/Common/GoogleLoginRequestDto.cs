@@ -1,8 +1,7 @@
 ﻿namespace Servexa.Application.DTOs.Auth.Common
 {
-    public class SocialLoginDto
+    public class GoogleLoginRequestDto
     {
-        public string Provider { get; set; } = string.Empty;
         public string IdToken { get; set; } = string.Empty;
     }
 }

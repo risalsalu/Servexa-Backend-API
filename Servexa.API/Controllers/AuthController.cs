@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Servexa.Application.DTOs.Auth;
 using Servexa.Application.DTOs.Auth.Common;
 using Servexa.Application.DTOs.Auth.Customer;
 using Servexa.Application.DTOs.Auth.ShopOwner;
@@ -21,91 +20,50 @@ namespace Servexa.API.Controllers
         }
 
         [HttpPost("register-user")]
-        public async Task<IActionResult> RegisterUser([FromBody] CustomerRegisterDto dto)
+        public async Task<IActionResult> RegisterUser(CustomerRegisterDto dto)
         {
             var result = await _authService.RegisterUserAsync(dto);
-            return Created(result, "User registration successful");
+            return Created(result, "User registered");
         }
 
         [HttpPost("register-shopowner")]
-        public async Task<IActionResult> RegisterShopOwner([FromBody] ShopOwnerRegisterDto dto)
+        public async Task<IActionResult> RegisterShopOwner(ShopOwnerRegisterDto dto)
         {
             var result = await _authService.RegisterShopOwnerAsync(dto);
-            return Created(result, "Shop owner registration successful");
+            return Created(result, "Shop owner registered");
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto dto)
+        public async Task<IActionResult> Login(LoginDto dto)
         {
             var result = await _authService.LoginAsync(dto);
 
-            Response.Cookies.Append("access_token", result.Token, BuildAccessCookie(result.ExpiresIn));
+            Response.Cookies.Append("access_token", result.AccessToken, BuildAccessCookie(result.ExpiresIn));
             Response.Cookies.Append("refresh_token", result.RefreshToken, BuildRefreshCookie());
 
-            return Success(new
-            {
-                result.Role,
-                result.UserId
-            }, "Login successful");
+            return Success(new { result.Role, result.UserId }, "Login successful");
+        }
+
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto dto)
+        {
+            var result = await _authService.GoogleLoginAsync(dto.IdToken);
+
+            Response.Cookies.Append("access_token", result.AccessToken, BuildAccessCookie(result.ExpiresIn));
+            Response.Cookies.Append("refresh_token", result.RefreshToken, BuildRefreshCookie());
+
+            return Success(new { result.Role, result.UserId }, "Google login successful");
         }
 
         [HttpPost("social-login")]
-        public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto dto)
+        public async Task<IActionResult> SocialLogin(SocialLoginDto dto)
         {
             var result = await _authService.SocialLoginAsync(dto);
 
-            Response.Cookies.Append("access_token", result.Token, BuildAccessCookie(result.ExpiresIn));
+            Response.Cookies.Append("access_token", result.AccessToken, BuildAccessCookie(result.ExpiresIn));
             Response.Cookies.Append("refresh_token", result.RefreshToken, BuildRefreshCookie());
 
-            return Success(new
-            {
-                result.Role,
-                result.UserId
-            }, "Social login successful");
-        }
-
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken()
-        {
-            var refreshToken = Request.Cookies["refresh_token"];
-            if (string.IsNullOrEmpty(refreshToken))
-                return UnauthorizedError("Refresh token missing");
-
-            var result = await _authService.RefreshTokenAsync(refreshToken);
-
-            Response.Cookies.Append("access_token", result.Token, BuildAccessCookie(result.ExpiresIn));
-            Response.Cookies.Append("refresh_token", result.RefreshToken, BuildRefreshCookie());
-
-            return Success(new
-            {
-                result.Role,
-                result.UserId
-            }, "Token refreshed");
-        }
-
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequestDto dto)
-        {
-            await _authService.LogoutAsync(dto.UserId);
-
-            Response.Cookies.Delete("access_token");
-            Response.Cookies.Delete("refresh_token");
-
-            return SuccessMessage("Logged out successfully");
-        }
-
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
-        {
-            var token = await _authService.ForgotPasswordAsync(dto);
-            return Success(token, "Reset instructions sent");
-        }
-
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
-        {
-            await _authService.ResetPasswordAsync(dto);
-            return SuccessMessage("Password reset successful");
+            return Success(new { result.Role, result.UserId }, "Social login successful");
         }
 
         private static CookieOptions BuildAccessCookie(int expiresIn)

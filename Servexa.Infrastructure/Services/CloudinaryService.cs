@@ -4,35 +4,37 @@ using Microsoft.AspNetCore.Http;
 using Servexa.Application.Interfaces;
 using System.Threading.Tasks;
 
-namespace Servexa.Infrastructure.Services;
-
-public class CloudinaryService : ICloudinaryService
+namespace Servexa.Infrastructure.Services
 {
-    private readonly Cloudinary _cloudinary;
-
-    public CloudinaryService(Cloudinary cloudinary)
+    public class CloudinaryService : ICloudinaryService
     {
-        _cloudinary = cloudinary;
-    }
+        private readonly Cloudinary _cloudinary;
 
-    public async Task<(string Url, string PublicId)> UploadAsync(IFormFile file)
-    {
-        using var stream = file.OpenReadStream();
-
-        var upload = new ImageUploadParams
+        public CloudinaryService(Cloudinary cloudinary)
         {
-            File = new FileDescription(file.FileName, stream),
-            Folder = "servexa/shops"
-        };
+            _cloudinary = cloudinary;
+        }
 
-        var result = await _cloudinary.UploadAsync(upload);
-        return (result.SecureUrl.ToString(), result.PublicId);
-    }
+        public async Task<(string Url, string PublicId)> UploadAsync(IFormFile file)
+        {
+            using var stream = file.OpenReadStream();
 
-    public async Task<bool> DeleteAsync(string publicId)
-    {
-        var deletion = new DeletionParams(publicId);
-        var result = await _cloudinary.DestroyAsync(deletion);
-        return result.Result == "ok";
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = "servexa/profile"
+            };
+
+            var result = await _cloudinary.UploadAsync(uploadParams);
+
+            return (result.SecureUrl.ToString(), result.PublicId);
+        }
+
+        public async Task<bool> DeleteAsync(string publicId)
+        {
+            var deleteParams = new DeletionParams(publicId);
+            var result = await _cloudinary.DestroyAsync(deleteParams);
+            return result.Result == "ok";
+        }
     }
 }

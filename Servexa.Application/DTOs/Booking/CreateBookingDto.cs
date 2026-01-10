@@ -8,6 +8,6 @@ namespace Servexa.Application.DTOs.Booking
     {
         public Guid ShopId { get; set; }
         public ServiceMode ServiceMode { get; set; }
-        public IEnumerable<Guid> ServiceIds { get; set; } = [];
+        public List<Guid> ServiceIds { get; set; } = new();
     }
 }

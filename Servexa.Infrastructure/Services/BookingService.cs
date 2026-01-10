@@ -29,7 +29,17 @@ namespace Servexa.Infrastructure.Services
 
         public async Task<BookingResponseDto> CreateDraftAsync(Guid customerId, CreateBookingDto dto)
         {
+            if (dto == null)
+                throw new Exception("Booking payload is missing");
+
+            if (dto.ServiceIds == null || !dto.ServiceIds.Any())
+                throw new Exception("At least one service must be selected");
+
             var services = await _shopServiceRepository.GetByIdsAsync(dto.ServiceIds);
+
+            if (services == null || !services.Any())
+                throw new Exception("Invalid services selected");
+
             var total = services.Sum(x => x.Price);
 
             if (total <= 0)
@@ -77,7 +87,6 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.AddressId = addressId;
-            booking.Status = BookingStatus.PendingPayment;
 
             return await _bookingRepository.UpdateAsync(booking);
         }
@@ -101,7 +110,6 @@ namespace Servexa.Infrastructure.Services
                 return false;
 
             booking.SlotId = slotId;
-            booking.Status = BookingStatus.PendingPayment;
 
             return await _bookingRepository.UpdateAsync(booking);
         }

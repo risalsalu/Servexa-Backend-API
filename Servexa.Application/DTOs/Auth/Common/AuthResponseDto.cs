@@ -1,10 +1,13 @@
-﻿namespace Servexa.Application.DTOs.Auth.Common;
+﻿using System;
 
-public class AuthResponseDto
+namespace Servexa.Application.DTOs.Auth.Common
 {
-    public string Token { get; set; } = "";
-    public string RefreshToken { get; set; } = "";
-    public int ExpiresIn { get; set; }
-    public string Role { get; set; } = string.Empty;
-    public Guid UserId { get; set; }
+    public class AuthResponseDto
+    {
+        public string AccessToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public int ExpiresIn { get; set; }
+        public string Role { get; set; } = string.Empty;
+        public Guid UserId { get; set; }
+    }
 }

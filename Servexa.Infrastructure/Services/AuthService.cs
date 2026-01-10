@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using Servexa.Application.DTOs.Auth;
 using Servexa.Application.DTOs.Auth.Common;
 using Servexa.Application.DTOs.Auth.Customer;
 using Servexa.Application.DTOs.Auth.ShopOwner;
@@ -24,19 +25,26 @@ namespace Servexa.Infrastructure.Services
         private readonly ITokenRepository _tokenRepo;
         private readonly IConfiguration _config;
         private readonly ICloudinaryService _cloudinary;
+        private readonly HttpClient _http;
 
-        public AuthService(IUserRepository userRepo, ITokenRepository tokenRepo, IConfiguration config, ICloudinaryService cloudinary)
+        public AuthService(
+            IUserRepository userRepo,
+            ITokenRepository tokenRepo,
+            IConfiguration config,
+            ICloudinaryService cloudinary,
+            IHttpClientFactory factory)
         {
             _userRepo = userRepo;
             _tokenRepo = tokenRepo;
             _config = config;
             _cloudinary = cloudinary;
+            _http = factory.CreateClient();
         }
 
         public async Task<AuthResponseDto> RegisterUserAsync(CustomerRegisterDto dto)
         {
             if (await _userRepo.EmailOrPhoneExistsAsync(dto.Email, dto.Phone))
-                throw new ApplicationException("Email or phone already in use.");
+                throw new ApplicationException("Email or phone already in use");
 
             var user = new User
             {
@@ -44,7 +52,7 @@ namespace Servexa.Infrastructure.Services
                 FullName = dto.FullName,
                 Email = dto.Email,
                 Phone = dto.Phone,
-                Role = dto.Role,
+                Role = "Customer",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 CreatedOn = DateTime.UtcNow,
                 IsActive = true,
@@ -52,21 +60,13 @@ namespace Servexa.Infrastructure.Services
             };
 
             await _userRepo.CreateAsync(user);
-
-            return new AuthResponseDto
-            {
-                Token = "",
-                RefreshToken = "",
-                ExpiresIn = 0,
-                Role = user.Role,
-                UserId = user.Id
-            };
+            return await GenerateTokensForUser(user);
         }
 
         public async Task<AuthResponseDto> RegisterShopOwnerAsync(ShopOwnerRegisterDto dto)
         {
             if (await _userRepo.EmailOrPhoneExistsAsync(dto.Email, dto.Phone))
-                throw new ApplicationException("Email or phone already in use.");
+                throw new ApplicationException("Email or phone already in use");
 
             var user = new User
             {
@@ -74,7 +74,7 @@ namespace Servexa.Infrastructure.Services
                 FullName = dto.OwnerName,
                 Email = dto.Email,
                 Phone = dto.Phone,
-                Role = dto.Role,
+                Role = "ShopOwner",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 BusinessName = dto.BusinessName,
                 CreatedOn = DateTime.UtcNow,
@@ -83,45 +83,52 @@ namespace Servexa.Infrastructure.Services
             };
 
             await _userRepo.CreateAsync(user);
-
-            return new AuthResponseDto
-            {
-                Token = "",
-                RefreshToken = "",
-                ExpiresIn = 0,
-                Role = user.Role,
-                UserId = user.Id
-            };
+            return await GenerateTokensForUser(user);
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
             var user = await _userRepo.GetByEmailOrPhoneAsync(dto.EmailOrPhone)
-                ?? throw new ApplicationException("Invalid credentials.");
+                ?? throw new ApplicationException("Invalid credentials");
 
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                throw new ApplicationException("Invalid credentials.");
+                throw new ApplicationException("Invalid credentials");
 
             if (!user.IsActive)
-                throw new ApplicationException("Account is disabled.");
+                throw new ApplicationException("Account disabled");
 
             return await GenerateTokensForUser(user);
         }
 
         public async Task<AuthResponseDto> SocialLoginAsync(SocialLoginDto dto)
         {
-            var user = await _userRepo.GetByEmailAsync(dto.Email);
+            if (dto.Provider != "google")
+                throw new ApplicationException("Unsupported provider");
+
+            return await GoogleLoginInternal(dto.IdToken);
+        }
+
+        public async Task<AuthResponseDto> GoogleLoginAsync(string idToken)
+        {
+            return await GoogleLoginInternal(idToken);
+        }
+
+        private async Task<AuthResponseDto> GoogleLoginInternal(string idToken)
+        {
+            var googleUser = await VerifyGoogleTokenAsync(idToken);
+
+            var user = await _userRepo.GetByEmailAsync(googleUser.Email);
 
             if (user == null)
             {
                 user = new User
                 {
                     Id = Guid.NewGuid(),
-                    FullName = dto.FullName,
-                    Email = dto.Email,
-                    Phone = dto.Phone ?? "",
-                    Role = dto.Role,
-                    PasswordHash = "",
+                    FullName = googleUser.FullName,
+                    Email = googleUser.Email,
+                    Phone = string.Empty,
+                    Role = "Customer",
+                    PasswordHash = string.Empty,
                     CreatedOn = DateTime.UtcNow,
                     IsActive = true,
                     IsDeleted = false
@@ -136,16 +143,15 @@ namespace Servexa.Infrastructure.Services
         public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
         {
             var stored = await _tokenRepo.GetByTokenAsync(refreshToken)
-                ?? throw new ApplicationException("Invalid refresh token.");
+                ?? throw new ApplicationException("Invalid refresh token");
 
             if (stored.IsRevoked || stored.ExpiresAt < DateTime.UtcNow)
-                throw new ApplicationException("Refresh token expired or revoked.");
+                throw new ApplicationException("Refresh token expired");
 
             var user = await _userRepo.GetByIdAsync(stored.UserId)
-                ?? throw new ApplicationException("User not found.");
+                ?? throw new ApplicationException("User not found");
 
             await _tokenRepo.RevokeRefreshTokenAsync(refreshToken);
-
             return await GenerateTokensForUser(user);
         }
 
@@ -157,17 +163,16 @@ namespace Servexa.Infrastructure.Services
         public async Task<string?> ForgotPasswordAsync(ForgotPasswordDto dto)
         {
             var user = await _userRepo.GetByEmailOrPhoneAsync(dto.EmailOrPhone);
-            if (user == null) return null;
-            return user.Id.ToString();
+            return user?.Id.ToString();
         }
 
         public async Task ResetPasswordAsync(ResetPasswordDto dto)
         {
             if (!Guid.TryParse(dto.Token, out var userId))
-                throw new ApplicationException("Invalid reset token.");
+                throw new ApplicationException("Invalid token");
 
             var user = await _userRepo.GetByIdAsync(userId)
-                ?? throw new ApplicationException("User not found.");
+                ?? throw new ApplicationException("User not found");
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.ModifiedOn = DateTime.UtcNow;
@@ -179,7 +184,7 @@ namespace Servexa.Infrastructure.Services
         public async Task<UserProfileDto> GetCurrentUserAsync(Guid userId)
         {
             var user = await _userRepo.GetByIdAsync(userId)
-                ?? throw new ApplicationException("User not found.");
+                ?? throw new ApplicationException("User not found");
 
             return new UserProfileDto
             {
@@ -200,7 +205,7 @@ namespace Servexa.Infrastructure.Services
         public async Task UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
         {
             var user = await _userRepo.GetByIdAsync(userId)
-                ?? throw new ApplicationException("User not found.");
+                ?? throw new ApplicationException("User not found");
 
             user.FullName = dto.FullName;
             user.Email = dto.Email;
@@ -219,7 +224,7 @@ namespace Servexa.Infrastructure.Services
         public async Task UpdateContactInfoAsync(Guid userId, UpdateContactInfoDto dto)
         {
             var user = await _userRepo.GetByIdAsync(userId)
-                ?? throw new ApplicationException("User not found.");
+                ?? throw new ApplicationException("User not found");
 
             if (!string.IsNullOrWhiteSpace(dto.FullName))
                 user.FullName = dto.FullName;
@@ -239,7 +244,7 @@ namespace Servexa.Infrastructure.Services
         public async Task<string?> UploadProfileImageAsync(Guid userId, IFormFile file)
         {
             var user = await _userRepo.GetByIdAsync(userId)
-                ?? throw new ApplicationException("User not found.");
+                ?? throw new ApplicationException("User not found");
 
             if (!string.IsNullOrEmpty(user.ProfileImagePublicId))
                 await _cloudinary.DeleteAsync(user.ProfileImagePublicId);
@@ -252,14 +257,13 @@ namespace Servexa.Infrastructure.Services
             user.ModifiedBy = userId;
 
             await _userRepo.UpdateAsync(user);
-
             return url;
         }
 
         public async Task DeleteProfileImageAsync(Guid userId)
         {
             var user = await _userRepo.GetByIdAsync(userId)
-                ?? throw new ApplicationException("User not found.");
+                ?? throw new ApplicationException("User not found");
 
             if (!string.IsNullOrEmpty(user.ProfileImagePublicId))
                 await _cloudinary.DeleteAsync(user.ProfileImagePublicId);
@@ -274,14 +278,14 @@ namespace Servexa.Infrastructure.Services
 
         private async Task<AuthResponseDto> GenerateTokensForUser(User user)
         {
-            var token = GenerateJwtToken(user, out var expires);
-            var refresh = await GenerateAndStoreRefreshToken(user);
+            var accessToken = GenerateJwtToken(user, out var expiresIn);
+            var refreshToken = await GenerateAndStoreRefreshToken(user);
 
             return new AuthResponseDto
             {
-                Token = token,
-                RefreshToken = refresh,
-                ExpiresIn = expires,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                ExpiresIn = expiresIn,
                 Role = user.Role,
                 UserId = user.Id
             };
@@ -289,14 +293,10 @@ namespace Servexa.Infrastructure.Services
 
         private string GenerateJwtToken(User user, out int expiresInSeconds)
         {
-            var jwtSection = _config.GetSection("Jwt");
-            var key = jwtSection["Key"]!;
-            var issuer = jwtSection["Issuer"];
-            var audience = jwtSection["Audience"];
-            var minutes = int.Parse(jwtSection["AccessTokenMinutes"] ?? "15");
+            var jwt = _config.GetSection("Jwt");
 
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
@@ -307,14 +307,14 @@ namespace Servexa.Infrastructure.Services
                 new(JwtRegisteredClaimNames.Email, user.Email)
             };
 
-            var expires = DateTime.UtcNow.AddMinutes(minutes);
+            var expires = DateTime.UtcNow.AddMinutes(int.Parse(jwt["AccessTokenMinutes"]!));
 
             var token = new JwtSecurityToken(
-                issuer,
-                audience,
+                jwt["Issuer"],
+                jwt["Audience"],
                 claims,
                 expires: expires,
-                signingCredentials: credentials
+                signingCredentials: creds
             );
 
             expiresInSeconds = (int)(expires - DateTime.UtcNow).TotalSeconds;
@@ -323,28 +323,42 @@ namespace Servexa.Infrastructure.Services
 
         private async Task<string> GenerateAndStoreRefreshToken(User user)
         {
-            var jwtSection = _config.GetSection("Jwt");
-            var days = int.Parse(jwtSection["RefreshTokenDays"] ?? "7");
+            var jwt = _config.GetSection("Jwt");
+            var bytes = new byte[64];
+            RandomNumberGenerator.Fill(bytes);
 
-            var randomBytes = new byte[64];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomBytes);
+            var token = Convert.ToBase64String(bytes);
 
-            var tokenString = Convert.ToBase64String(randomBytes);
-
-            var refresh = new RefreshToken
+            await _tokenRepo.SaveRefreshTokenAsync(new RefreshToken
             {
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
-                Token = tokenString,
+                Token = token,
                 CreatedOn = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(days),
+                ExpiresAt = DateTime.UtcNow.AddDays(int.Parse(jwt["RefreshTokenDays"]!)),
                 IsRevoked = false,
                 IsDeleted = false
-            };
+            });
 
-            await _tokenRepo.SaveRefreshTokenAsync(refresh);
-            return tokenString;
+            return token;
+        }
+
+        private async Task<GoogleUserInfoDto> VerifyGoogleTokenAsync(string idToken)
+        {
+            var res = await _http.GetAsync($"https://oauth2.googleapis.com/tokeninfo?id_token={idToken}");
+
+            if (!res.IsSuccessStatusCode)
+                throw new ApplicationException("Invalid Google token");
+
+            var json = await res.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(json).RootElement;
+
+            return new GoogleUserInfoDto
+            {
+                Email = doc.GetProperty("email").GetString()!,
+                FullName = doc.GetProperty("name").GetString()!,
+                ProviderUserId = doc.GetProperty("sub").GetString()!
+            };
         }
     }
 }
